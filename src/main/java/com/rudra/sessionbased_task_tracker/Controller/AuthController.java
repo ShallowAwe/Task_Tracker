@@ -143,7 +143,7 @@ public class AuthController {
 
         String refreshToken = request.get("refreshToken");
 
-        if (refreshToken == null) {
+        if (refreshToken == null)   {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Refresh token required"));
         }
