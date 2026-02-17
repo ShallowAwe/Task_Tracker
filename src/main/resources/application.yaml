@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: Session-Based Task Tracker
+
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/Task_Tracker?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+
+app:
+  jwt-secret: dGhpc2lzYXZlcnlzZWNyZXRrZXl0aGF0aXNsb25nZW5vdWdoZm9ySFMyNTZhbGdvcml0aG1hbmRpdHNob3VsZGJla2VwdHNlY3VyZQ==
+  jwt-access-exp: 900000
+  jwt-refresh-exp: 604800000
