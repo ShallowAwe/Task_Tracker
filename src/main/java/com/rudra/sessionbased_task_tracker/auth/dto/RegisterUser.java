@@ -1,4 +1,4 @@
-package com.rudra.sessionbased_task_tracker.Dto;
+package com.rudra.sessionbased_task_tracker.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

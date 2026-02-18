@@ -1,5 +1,8 @@
 package com.rudra.sessionbased_task_tracker.Exception;
 
+import com.rudra.sessionbased_task_tracker.user.exception.UserAlreadyExistsException;
+import com.rudra.sessionbased_task_tracker.user.exception.UserNotFoundException;
+import com.rudra.sessionbased_task_tracker.auth.exception.InvalidTokenException;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

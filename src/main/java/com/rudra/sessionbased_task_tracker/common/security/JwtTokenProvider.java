@@ -1,6 +1,4 @@
-package com.rudra.sessionbased_task_tracker.Security;
-
-
+package com.rudra.sessionbased_task_tracker.common.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -16,7 +14,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
-public class JwtTokenProvider  {
+public class JwtTokenProvider {
 
     @Value("${app.jwt-secret}")
     private String jwtSecret;
@@ -28,13 +26,10 @@ public class JwtTokenProvider  {
     @Value("${app.jwt-refresh-exp}")
     private long refreshTokenExpirationMs;
 
-
-
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
 
     public String generateAccessToken(Long userId) {
         Date now = new Date();
@@ -47,6 +42,7 @@ public class JwtTokenProvider  {
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
     public String generateRefreshToken(Long userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
@@ -60,17 +56,17 @@ public class JwtTokenProvider  {
                 .compact();
     }
 
-    public Long getUserIdFromToken(String token){
+    public Long getUserIdFromToken(String token) {
         Claims claim = Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        return  Long.parseLong(claim.getSubject());
+        return Long.parseLong(claim.getSubject());
 
     }
 
-    public boolean validateToken(String token){
+    public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())

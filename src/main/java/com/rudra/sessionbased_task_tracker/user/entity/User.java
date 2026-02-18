@@ -1,4 +1,4 @@
-package com.rudra.sessionbased_task_tracker.Domain;
+package com.rudra.sessionbased_task_tracker.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

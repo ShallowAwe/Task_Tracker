@@ -1,4 +1,4 @@
-package com.rudra.sessionbased_task_tracker.Domain;
+package com.rudra.sessionbased_task_tracker.auth.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

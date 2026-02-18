@@ -1,13 +1,14 @@
-package com.rudra.sessionbased_task_tracker.Service;
+package com.rudra.sessionbased_task_tracker.auth.service;
 
-import com.rudra.sessionbased_task_tracker.Domain.RefreshToken;
-import com.rudra.sessionbased_task_tracker.Domain.User;
-import com.rudra.sessionbased_task_tracker.Dto.LoginRequest;
-import com.rudra.sessionbased_task_tracker.Dto.RegisterUser;
-import com.rudra.sessionbased_task_tracker.Exception.InvalidTokenException;
-import com.rudra.sessionbased_task_tracker.Exception.UserAlreadyExistsException;
-import com.rudra.sessionbased_task_tracker.Repository.RefreshTokenRepository;
-import com.rudra.sessionbased_task_tracker.Security.JwtTokenProvider;
+import com.rudra.sessionbased_task_tracker.auth.entity.RefreshToken;
+import com.rudra.sessionbased_task_tracker.user.entity.User;
+import com.rudra.sessionbased_task_tracker.auth.dto.LoginRequest;
+import com.rudra.sessionbased_task_tracker.auth.dto.RegisterUser;
+import com.rudra.sessionbased_task_tracker.auth.exception.InvalidTokenException;
+import com.rudra.sessionbased_task_tracker.user.exception.UserAlreadyExistsException;
+import com.rudra.sessionbased_task_tracker.auth.repository.RefreshTokenRepository;
+import com.rudra.sessionbased_task_tracker.common.security.JwtTokenProvider;
+import com.rudra.sessionbased_task_tracker.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -46,9 +47,7 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
         User user = userService.getUser(request.getEmail());
         return generateTokensAndPersistSession(user);
@@ -83,8 +82,7 @@ public class AuthService {
         return Map.of(
                 "id", user.getId(),
                 "email", user.getEmail(),
-                "name", user.getName()
-        );
+                "name", user.getName());
     }
 
     public void logout(String refreshToken) {
@@ -113,7 +111,6 @@ public class AuthService {
 
         return Map.of(
                 "accessToken", accessToken,
-                "refreshToken", refreshToken
-        );
+                "refreshToken", refreshToken);
     }
 }

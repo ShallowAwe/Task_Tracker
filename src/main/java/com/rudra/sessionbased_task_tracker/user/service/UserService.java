@@ -1,7 +1,7 @@
-package com.rudra.sessionbased_task_tracker.Service;
+package com.rudra.sessionbased_task_tracker.user.service;
 
-import com.rudra.sessionbased_task_tracker.Domain.User;
-import com.rudra.sessionbased_task_tracker.Repository.UserRepository;
+import com.rudra.sessionbased_task_tracker.user.entity.User;
+import com.rudra.sessionbased_task_tracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +16,8 @@ public class UserService {
     }
 
     public boolean checkIfUserExists(String email) {
-        if (email == null) return false;
+        if (email == null)
+            return false;
         return userRepository.existsByEmail(email);
     }
 
