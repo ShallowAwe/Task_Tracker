@@ -1,5 +1,6 @@
 package com.rudra.sessionbased_task_tracker.projectMember.controller;
 
+import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
 import com.rudra.sessionbased_task_tracker.projectMember.dto.AddMemberRequest;
 import com.rudra.sessionbased_task_tracker.projectMember.dto.ProjectMemberResponse;
 import com.rudra.sessionbased_task_tracker.projectMember.dto.UpdateMemberRoleRequest;
@@ -11,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/members")
@@ -47,11 +47,11 @@ public class ProjectMemberController {
     }
 
     @DeleteMapping("/{memberId}")
-    public ResponseEntity<Map<String, String>> removeMember(
+    public ResponseEntity<MessageResponse> removeMember(
             @PathVariable Long projectId,
             @PathVariable Long memberId,
             @RequestAttribute("userId") Long currentUserId) {
         projectMemberService.removeMember(projectId, memberId, currentUserId);
-        return ResponseEntity.ok(Map.of("message", "Member removed successfully"));
+        return ResponseEntity.ok(new MessageResponse("Member removed successfully"));
     }
 }

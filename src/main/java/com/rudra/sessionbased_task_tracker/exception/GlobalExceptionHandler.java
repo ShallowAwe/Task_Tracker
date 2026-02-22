@@ -8,6 +8,7 @@ import com.rudra.sessionbased_task_tracker.projectMember.exception.MemberNotFoun
 import com.rudra.sessionbased_task_tracker.user.exception.UserAlreadyExistsException;
 import com.rudra.sessionbased_task_tracker.user.exception.UserNotFoundException;
 import com.rudra.sessionbased_task_tracker.auth.exception.InvalidTokenException;
+import com.rudra.sessionbased_task_tracker.common.dto.ErrorResponse;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,33 +17,31 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.Map;
-
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<?> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<?> handleUserNotFound(UserNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<?> handleInvalidToken(InvalidTokenException ex) {
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException x) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(x.getMessage()));
     }
 
     // Handles @Valid failures on request bodies
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
         String error = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -51,45 +50,45 @@ public class GlobalExceptionHandler {
                 .orElse("Validation failed");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("message", error));
+                .body(new ErrorResponse(error));
     }
 
     // Catch-all for anything unexpected
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGeneric(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         log.error("Unexpected error: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "Something went wrong"));
+                .body(new ErrorResponse("Something went wrong"));
     }
 
-
     @ExceptionHandler(ProjectNotFoundException.class)
-    public ResponseEntity<?> handleProjectNotFound(ProjectNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleProjectNotFound(ProjectNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(ProjectAlreadyExistsException.class)
-    public ResponseEntity<?> handleProjectAlreadyExists(ProjectAlreadyExistsException ex) {
+    public ResponseEntity<ErrorResponse> handleProjectAlreadyExists(ProjectAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
+
     @ExceptionHandler(MemberAlreadyExistsException.class)
-    public ResponseEntity<?> handleMemberAlreadyExists(MemberAlreadyExistsException ex) {
+    public ResponseEntity<ErrorResponse> handleMemberAlreadyExists(MemberAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(MemberNotFoundException.class)
-    public ResponseEntity<?> handleMemberNotFound(MemberNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleMemberNotFound(MemberNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(InsufficientPermissionException.class)
-    public ResponseEntity<?> handleInsufficientPermission(InsufficientPermissionException ex) {
+    public ResponseEntity<ErrorResponse> handleInsufficientPermission(InsufficientPermissionException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("message", ex.getMessage()));
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
 }

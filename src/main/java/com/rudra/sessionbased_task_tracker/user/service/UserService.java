@@ -1,9 +1,11 @@
 package com.rudra.sessionbased_task_tracker.user.service;
 
 import com.rudra.sessionbased_task_tracker.user.entity.User;
+import com.rudra.sessionbased_task_tracker.user.exception.UserNotFoundException;
 import com.rudra.sessionbased_task_tracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -11,6 +13,7 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    @Transactional
     public User createUser(User user) {
         return userRepository.save(user);
     }
@@ -23,7 +26,7 @@ public class UserService {
 
     public User getUser(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
 
     public User getUserById(Long id) {

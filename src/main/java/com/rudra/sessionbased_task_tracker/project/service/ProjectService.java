@@ -7,11 +7,15 @@ import com.rudra.sessionbased_task_tracker.project.entity.Project;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectAlreadyExistsException;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectNotFoundException;
 import com.rudra.sessionbased_task_tracker.project.repository.ProjectRepository;
+import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectMember;
+import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectRole;
+import com.rudra.sessionbased_task_tracker.projectMember.repository.ProjectMemberRepository;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
 import com.rudra.sessionbased_task_tracker.user.exception.UserNotFoundException;
 import com.rudra.sessionbased_task_tracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,7 +27,9 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
+    @Transactional
     public ProjectResponse createProject(CreateProjectRequest request, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
@@ -44,6 +50,16 @@ public class ProjectService {
         project.setUpdatedAt(now);
 
         Project saved = projectRepository.save(project);
+
+        // Auto-assign OWNER membership
+        ProjectMember ownerMembership = new ProjectMember();
+        ownerMembership.setProject(saved);
+        ownerMembership.setUser(user);
+        ownerMembership.setRole(ProjectRole.OWNER);
+        ownerMembership.setCreatedAt(now);
+        ownerMembership.setUpdatedAt(now);
+        projectMemberRepository.save(ownerMembership);
+
         return mapToResponse(saved);
     }
 
@@ -81,6 +97,7 @@ public class ProjectService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public ProjectResponse updateProject(Long id, UpdateProjectRequest request, Long userId) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
@@ -98,10 +115,10 @@ public class ProjectService {
 
         project.setUpdatedAt(LocalDateTime.now());
 
-        Project updated = projectRepository.save(project);
-        return mapToResponse(updated);
+        return mapToResponse(project);
     }
 
+    @Transactional
     public void archiveProject(Long id, Long userId) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
@@ -112,9 +129,9 @@ public class ProjectService {
 
         project.setArchivedFlag(true);
         project.setUpdatedAt(LocalDateTime.now());
-        projectRepository.save(project);
     }
 
+    @Transactional
     public void unarchiveProject(Long id, Long userId) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
@@ -125,9 +142,9 @@ public class ProjectService {
 
         project.setArchivedFlag(false);
         project.setUpdatedAt(LocalDateTime.now());
-        projectRepository.save(project);
     }
 
+    @Transactional
     public void deleteProject(Long id, Long userId) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));

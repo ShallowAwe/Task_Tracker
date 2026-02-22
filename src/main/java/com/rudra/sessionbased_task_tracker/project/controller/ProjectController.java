@@ -1,5 +1,6 @@
 package com.rudra.sessionbased_task_tracker.project.controller;
 
+import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
 import com.rudra.sessionbased_task_tracker.project.dto.CreateProjectRequest;
 import com.rudra.sessionbased_task_tracker.project.dto.ProjectResponse;
 import com.rudra.sessionbased_task_tracker.project.dto.UpdateProjectRequest;
@@ -11,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -62,26 +62,26 @@ public class ProjectController {
     }
 
     @PatchMapping("/{id}/archive")
-    public ResponseEntity<Map<String, String>> archiveProject(
+    public ResponseEntity<MessageResponse> archiveProject(
             @PathVariable Long id,
             @RequestAttribute("userId") Long userId) {
         projectService.archiveProject(id, userId);
-        return ResponseEntity.ok(Map.of("message", "Project archived successfully"));
+        return ResponseEntity.ok(new MessageResponse("Project archived successfully"));
     }
 
     @PatchMapping("/{id}/unarchive")
-    public ResponseEntity<Map<String, String>> unarchiveProject(
+    public ResponseEntity<MessageResponse> unarchiveProject(
             @PathVariable Long id,
             @RequestAttribute("userId") Long userId) {
         projectService.unarchiveProject(id, userId);
-        return ResponseEntity.ok(Map.of("message", "Project unarchived successfully"));
+        return ResponseEntity.ok(new MessageResponse("Project unarchived successfully"));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteProject(
+    public ResponseEntity<MessageResponse> deleteProject(
             @PathVariable Long id,
             @RequestAttribute("userId") Long userId) {
         projectService.deleteProject(id, userId);
-        return ResponseEntity.ok(Map.of("message", "Project deleted successfully"));
+        return ResponseEntity.ok(new MessageResponse("Project deleted successfully"));
     }
 }

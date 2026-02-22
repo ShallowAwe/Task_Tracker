@@ -36,13 +36,7 @@ public class ProjectMemberService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
 
-        ProjectMember currentUserMembership = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUserId)
-                .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
-
-        if (currentUserMembership.getRole() != ProjectRole.OWNER &&
-                currentUserMembership.getRole() != ProjectRole.MAINTAINER) {
-            throw new InsufficientPermissionException("Only OWNER or MAINTAINER can add members");
-        }
+        validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can add members");
 
         User userToAdd = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + request.getUserId()));
@@ -60,8 +54,7 @@ public class ProjectMemberService {
         newMember.setCreatedAt(now);
         newMember.setUpdatedAt(now);
 
-        ProjectMember saved = projectMemberRepository.save(newMember);
-        return mapToResponse(saved);
+        return mapToResponse(newMember);
     }
 
     public List<ProjectMemberResponse> getProjectMembers(Long projectId, Long currentUserId) {
@@ -75,14 +68,9 @@ public class ProjectMemberService {
     }
 
     @Transactional
-    public ProjectMemberResponse updateMemberRole(Long projectId, Long memberId, UpdateMemberRoleRequest request, Long currentUserId) {
-        ProjectMember currentUserMembership = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUserId)
-                .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
-
-        if (currentUserMembership.getRole() != ProjectRole.OWNER &&
-                currentUserMembership.getRole() != ProjectRole.MAINTAINER) {
-            throw new InsufficientPermissionException("Only OWNER or MAINTAINER can update member roles");
-        }
+    public ProjectMemberResponse updateMemberRole(Long projectId, Long memberId, UpdateMemberRoleRequest request,
+            Long currentUserId) {
+        validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can update member roles");
 
         ProjectMember memberToUpdate = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Member not found with id: " + memberId));
@@ -98,19 +86,12 @@ public class ProjectMemberService {
         memberToUpdate.setRole(request.getRole());
         memberToUpdate.setUpdatedAt(LocalDateTime.now());
 
-        ProjectMember updated = projectMemberRepository.save(memberToUpdate);
-        return mapToResponse(updated);
+        return mapToResponse(memberToUpdate);
     }
 
     @Transactional
     public void removeMember(Long projectId, Long memberId, Long currentUserId) {
-        ProjectMember currentUserMembership = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUserId)
-                .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
-
-        if (currentUserMembership.getRole() != ProjectRole.OWNER &&
-                currentUserMembership.getRole() != ProjectRole.MAINTAINER) {
-            throw new InsufficientPermissionException("Only OWNER or MAINTAINER can remove members");
-        }
+        validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can remove members");
 
         ProjectMember memberToRemove = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Member not found with id: " + memberId));
@@ -124,6 +105,16 @@ public class ProjectMemberService {
         }
 
         projectMemberRepository.delete(memberToRemove);
+    }
+
+    private ProjectMember validateMemberPermission(Long projectId, Long userId, String errorMessage) {
+        ProjectMember membership = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
+
+        if (membership.getRole() != ProjectRole.OWNER && membership.getRole() != ProjectRole.MAINTAINER) {
+            throw new InsufficientPermissionException(errorMessage);
+        }
+        return membership;
     }
 
     private ProjectMemberResponse mapToResponse(ProjectMember member) {

@@ -3,6 +3,8 @@ package com.rudra.sessionbased_task_tracker.auth.controller;
 import com.rudra.sessionbased_task_tracker.auth.dto.LoginRequest;
 import com.rudra.sessionbased_task_tracker.auth.dto.RegisterUser;
 import com.rudra.sessionbased_task_tracker.auth.service.AuthService;
+import com.rudra.sessionbased_task_tracker.common.dto.AuthResponse;
+import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,18 +21,18 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterUser dto) {
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUser dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(authService.register(dto));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
+    public ResponseEntity<AuthResponse> refresh(@RequestBody Map<String, String> request) {
         return ResponseEntity.ok(authService.refresh(request.get("refreshToken")));
     }
 

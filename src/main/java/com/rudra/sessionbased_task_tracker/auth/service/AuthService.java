@@ -1,6 +1,7 @@
 package com.rudra.sessionbased_task_tracker.auth.service;
 
 import com.rudra.sessionbased_task_tracker.auth.entity.RefreshToken;
+import com.rudra.sessionbased_task_tracker.common.dto.AuthResponse;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
 import com.rudra.sessionbased_task_tracker.auth.dto.LoginRequest;
 import com.rudra.sessionbased_task_tracker.auth.dto.RegisterUser;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -28,7 +30,8 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public Map<String, String> register(RegisterUser dto) {
+    @Transactional
+    public AuthResponse register(RegisterUser dto) {
         if (userService.checkIfUserExists(dto.getEmail())) {
             throw new UserAlreadyExistsException(dto.getEmail());
         }
@@ -43,7 +46,8 @@ public class AuthService {
         return generateTokensAndPersistSession(savedUser);
     }
 
-    public Map<String, String> login(LoginRequest request) {
+    @Transactional
+    public AuthResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -53,7 +57,7 @@ public class AuthService {
         return generateTokensAndPersistSession(user);
     }
 
-    public Map<String, String> refresh(String refreshToken) {
+    public AuthResponse refresh(String refreshToken) {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new InvalidTokenException("Invalid refresh token");
         }
@@ -68,7 +72,9 @@ public class AuthService {
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
         String newAccessToken = jwtTokenProvider.generateAccessToken(userId);
 
-        return Map.of("accessToken", newAccessToken);
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .build();
     }
 
     public Map<String, Object> getMe(String token) {
@@ -85,6 +91,7 @@ public class AuthService {
                 "name", user.getName());
     }
 
+    @Transactional
     public void logout(String refreshToken) {
         if (refreshToken == null) {
             throw new InvalidTokenException("Refresh token is required");
@@ -97,7 +104,7 @@ public class AuthService {
         refreshTokenRepository.save(storedToken);
     }
 
-    private Map<String, String> generateTokensAndPersistSession(User user) {
+    private AuthResponse generateTokensAndPersistSession(User user) {
         String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
@@ -109,8 +116,9 @@ public class AuthService {
 
         refreshTokenRepository.save(session);
 
-        return Map.of(
-                "accessToken", accessToken,
-                "refreshToken", refreshToken);
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 }
