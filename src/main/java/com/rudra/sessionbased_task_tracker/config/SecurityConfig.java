@@ -1,4 +1,4 @@
-package com.rudra.sessionbased_task_tracker.Config;
+package com.rudra.sessionbased_task_tracker.config;
 
 import com.rudra.sessionbased_task_tracker.common.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
