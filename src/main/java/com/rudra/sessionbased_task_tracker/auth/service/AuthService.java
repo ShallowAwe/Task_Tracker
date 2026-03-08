@@ -39,8 +39,8 @@ public class AuthService {
         User newUser = new User();
         newUser.setEmail(dto.getEmail());
         newUser.setName(dto.getName());
-        newUser.setPassword_hash(passwordEncoder.encode(dto.getPassword()));
-        newUser.setCreated_at(LocalDateTime.now());
+        newUser.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        newUser.setCreatedAt(LocalDateTime.now());
 
         User savedUser = userService.createUser(newUser);
         return generateTokensAndPersistSession(savedUser);

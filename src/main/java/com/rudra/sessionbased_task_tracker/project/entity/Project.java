@@ -21,11 +21,13 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "`proj_key`", unique = true, nullable = false)
+    @Column(name = "project_key", unique = true, nullable = false, length = 10)
     private String key;
 
+    @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(length = 500)
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)

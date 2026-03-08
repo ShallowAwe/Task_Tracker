@@ -1,14 +1,15 @@
 package com.rudra.sessionbased_task_tracker.ticket.dto;
 
-
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketPriority;
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketStatus;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
 @Builder
 public class TicketResponse {
 
@@ -29,6 +30,7 @@ public class TicketResponse {
     private Long assigneeId;
     private String assigneeName;
 
+    private LocalDateTime dueDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

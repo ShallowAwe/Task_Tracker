@@ -36,7 +36,15 @@ public class ProjectMemberService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
 
-        validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can add members");
+        ProjectMember currentMember = validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can add members");
+
+        // Prevent role escalation: can only assign roles below your own level
+        // Exception: OWNER can assign any role
+        if (currentMember.getRole() != ProjectRole.OWNER
+                && request.getRole().getLevel() >= currentMember.getRole().getLevel()) {
+            throw new InsufficientPermissionException(
+                    "Cannot assign a role equal to or higher than your own");
+        }
 
         User userToAdd = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + request.getUserId()));
@@ -54,7 +62,9 @@ public class ProjectMemberService {
         newMember.setCreatedAt(now);
         newMember.setUpdatedAt(now);
 
-        return mapToResponse(newMember);
+        ProjectMember savedMember = projectMemberRepository.save(newMember);
+
+        return mapToResponse(savedMember);
     }
 
     public List<ProjectMemberResponse> getProjectMembers(Long projectId, Long currentUserId) {
@@ -69,8 +79,8 @@ public class ProjectMemberService {
 
     @Transactional
     public ProjectMemberResponse updateMemberRole(Long projectId, Long memberId, UpdateMemberRoleRequest request,
-            Long currentUserId) {
-        validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can update member roles");
+                                                  Long currentUserId) {
+        ProjectMember currentMember = validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can update member roles");
 
         ProjectMember memberToUpdate = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Member not found with id: " + memberId));
@@ -79,8 +89,22 @@ public class ProjectMemberService {
             throw new MemberNotFoundException("Member not found in this project");
         }
 
-        if (memberToUpdate.getRole() == ProjectRole.OWNER && request.getRole() != ProjectRole.OWNER) {
+        if (memberToUpdate.getRole() == ProjectRole.OWNER) {
             throw new InsufficientPermissionException("Cannot change OWNER role");
+        }
+
+        // Prevent role escalation: cannot assign role at or above your own level (unless OWNER)
+        if (currentMember.getRole() != ProjectRole.OWNER
+                && request.getRole().getLevel() >= currentMember.getRole().getLevel()) {
+            throw new InsufficientPermissionException(
+                    "Cannot assign a role equal to or higher than your own");
+        }
+
+        // Prevent non-OWNER from modifying someone at or above their level
+        if (currentMember.getRole() != ProjectRole.OWNER
+                && memberToUpdate.getRole().getLevel() >= currentMember.getRole().getLevel()) {
+            throw new InsufficientPermissionException(
+                    "Cannot modify a member with a role equal to or higher than your own");
         }
 
         memberToUpdate.setRole(request.getRole());
@@ -91,7 +115,7 @@ public class ProjectMemberService {
 
     @Transactional
     public void removeMember(Long projectId, Long memberId, Long currentUserId) {
-        validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can remove members");
+        ProjectMember currentMember = validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can remove members");
 
         ProjectMember memberToRemove = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Member not found with id: " + memberId));
@@ -102,6 +126,13 @@ public class ProjectMemberService {
 
         if (memberToRemove.getRole() == ProjectRole.OWNER) {
             throw new InsufficientPermissionException("Cannot remove OWNER from project");
+        }
+
+        // Prevent removing someone at or above your level (unless OWNER)
+        if (currentMember.getRole() != ProjectRole.OWNER
+                && memberToRemove.getRole().getLevel() >= currentMember.getRole().getLevel()) {
+            throw new InsufficientPermissionException(
+                    "Cannot remove a member with a role equal to or higher than your own");
         }
 
         projectMemberRepository.delete(memberToRemove);

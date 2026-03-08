@@ -67,7 +67,8 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-        if (!project.getOwner().getId().equals(userId)) {
+        // Any project member can view the project
+        if (!projectMemberRepository.existsByProjectIdAndUserId(id, userId)) {
             throw new ProjectNotFoundException("Project not found with id: " + id);
         }
 
@@ -78,7 +79,7 @@ public class ProjectService {
         Project project = projectRepository.findByKey(key)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with key: " + key));
 
-        if (!project.getOwner().getId().equals(userId)) {
+        if (!projectMemberRepository.existsByProjectIdAndUserId(project.getId(), userId)) {
             throw new ProjectNotFoundException("Project not found with key: " + key);
         }
 
@@ -86,13 +87,16 @@ public class ProjectService {
     }
 
     public List<ProjectResponse> getAllProjectsByUser(Long userId) {
-        return projectRepository.findByOwnerId(userId).stream()
+        return projectMemberRepository.findByUserId(userId).stream()
+                .map(member -> member.getProject())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     public List<ProjectResponse> getActiveProjectsByUser(Long userId) {
-        return projectRepository.findByOwnerIdAndArchivedFlagFalse(userId).stream()
+        return projectMemberRepository.findByUserId(userId).stream()
+                .map(member -> member.getProject())
+                .filter(project -> !project.isArchivedFlag())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -102,7 +106,11 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-        if (!project.getOwner().getId().equals(userId)) {
+        // OWNER or MAINTAINER can update project details
+        ProjectMember membership = projectMemberRepository.findByProjectIdAndUserId(id, userId)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
+
+        if (!membership.getRole().isAtLeast(ProjectRole.MAINTAINER)) {
             throw new ProjectNotFoundException("Project not found with id: " + id);
         }
 

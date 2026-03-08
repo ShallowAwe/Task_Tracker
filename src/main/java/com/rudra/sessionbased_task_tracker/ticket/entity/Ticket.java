@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+
 public class Ticket {
 
     @Id
@@ -56,6 +57,9 @@ public class Ticket {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
