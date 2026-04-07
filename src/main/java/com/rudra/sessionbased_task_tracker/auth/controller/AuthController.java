@@ -5,12 +5,15 @@ import com.rudra.sessionbased_task_tracker.auth.dto.RegisterUser;
 import com.rudra.sessionbased_task_tracker.auth.service.AuthService;
 import com.rudra.sessionbased_task_tracker.common.dto.AuthResponse;
 import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
+import com.rudra.sessionbased_task_tracker.user.entity.User;
+import com.rudra.sessionbased_task_tracker.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -19,6 +22,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUser dto) {
@@ -46,4 +50,11 @@ public class AuthController {
         authService.logout(request.get("refreshToken"));
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
+    @GetMapping("/getAll")
+    public List<User> getAllUser(){
+       return  userService.getAllUsers();
+    }
+
+
+
 }
