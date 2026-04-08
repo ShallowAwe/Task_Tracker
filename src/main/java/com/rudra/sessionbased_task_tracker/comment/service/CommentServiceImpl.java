@@ -13,7 +13,7 @@ import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectRole;
 import com.rudra.sessionbased_task_tracker.projectMember.exception.InsufficientPermissionException;
 import com.rudra.sessionbased_task_tracker.projectMember.repository.ProjectMemberRepository;
 import com.rudra.sessionbased_task_tracker.ticket.entity.Ticket;
-import TicketNotFoundException;
+import com.rudra.sessionbased_task_tracker.ticket.exception.TicketNotFoundException;
 import com.rudra.sessionbased_task_tracker.ticket.repository.TicketRepository;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
 import com.rudra.sessionbased_task_tracker.user.repository.UserRepository;
