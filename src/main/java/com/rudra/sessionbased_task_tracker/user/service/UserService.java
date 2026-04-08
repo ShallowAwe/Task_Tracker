@@ -20,27 +20,29 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
     public boolean checkIfUserExists(String email) {
         if (email == null)
             return false;
         return userRepository.existsByEmail(email);
     }
 
+    @Transactional(readOnly = true)
     public User getUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
 
+    @Transactional(readOnly = true)
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
     }
 
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
+
 }

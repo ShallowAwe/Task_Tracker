@@ -37,6 +37,13 @@ public class Project {
     @Column(name = "archived_flag")
     private boolean archivedFlag = false;
 
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
+    private User deletedBy;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

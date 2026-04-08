@@ -19,6 +19,9 @@ public class User {
     private String name;
     @Column(unique = true, nullable = false)
     private String email;
-    private String password_hash;
-    private LocalDateTime created_at;
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }

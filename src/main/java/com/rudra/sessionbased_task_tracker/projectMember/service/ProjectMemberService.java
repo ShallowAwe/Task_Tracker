@@ -33,7 +33,7 @@ public class ProjectMemberService {
 
     @Transactional
     public ProjectMemberResponse addMember(Long projectId, AddMemberRequest request, Long currentUserId) {
-        Project project = projectRepository.findById(projectId)
+        Project project = projectRepository.findByIdAndDeletedFalse(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
 
         ProjectMember currentMember = validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can add members");

@@ -41,4 +41,11 @@ public class Comment {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
+
+    @Column(name = "deleted_by")
+    private User deletedBy;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
 }

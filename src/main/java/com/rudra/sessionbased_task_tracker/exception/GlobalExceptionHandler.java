@@ -103,5 +103,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse(ex.getMessage()));
     }
-
+//   public ResponseEntity<ErrorResponse> InsufficientPermissionException(InsufficientPermissionException ex){
+//        return   ResponseEntity.status(HttpStatus.FORBIDDEN)
+//                .body(new ErrorResponse(ex.getMessage()));
+//   }
 }

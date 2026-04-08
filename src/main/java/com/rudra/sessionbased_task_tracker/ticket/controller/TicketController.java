@@ -5,7 +5,7 @@ import com.rudra.sessionbased_task_tracker.ticket.dto.CreateTicketRequest;
 import com.rudra.sessionbased_task_tracker.ticket.dto.TicketResponse;
 import com.rudra.sessionbased_task_tracker.ticket.dto.UpdateTicketRequest;
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketStatus;
-import com.rudra.sessionbased_task_tracker.ticket.service.TicketService;
+import com.rudra.sessionbased_task_tracker.ticket.service.TicketServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TicketController {
 
-    private final TicketService ticketService;
+    private final TicketServiceImpl ticketService;
 
     @PostMapping
     public ResponseEntity<TicketResponse> createTicket(

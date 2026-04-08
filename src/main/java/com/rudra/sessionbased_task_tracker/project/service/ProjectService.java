@@ -7,6 +7,7 @@ import com.rudra.sessionbased_task_tracker.project.entity.Project;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectAlreadyExistsException;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectNotFoundException;
 import com.rudra.sessionbased_task_tracker.project.repository.ProjectRepository;
+import com.rudra.sessionbased_task_tracker.projectMember.exception.InsufficientPermissionException;
 import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectMember;
 import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectRole;
 import com.rudra.sessionbased_task_tracker.projectMember.repository.ProjectMemberRepository;
@@ -64,7 +65,7 @@ public class ProjectService {
     }
 
     public ProjectResponse getProjectById(Long id, Long userId) {
-        Project project = projectRepository.findById(id)
+        Project project = projectRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
         // Any project member can view the project
@@ -103,7 +104,7 @@ public class ProjectService {
 
     @Transactional
     public ProjectResponse updateProject(Long id, UpdateProjectRequest request, Long userId) {
-        Project project = projectRepository.findById(id)
+        Project project = projectRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
         // OWNER or MAINTAINER can update project details
@@ -111,7 +112,7 @@ public class ProjectService {
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
         if (!membership.getRole().isAtLeast(ProjectRole.MAINTAINER)) {
-            throw new ProjectNotFoundException("Project not found with id: " + id);
+            throw new InsufficientPermissionException("Only OWNER or MAINTAINER can update project details");
         }
 
         if (request.getName() != null) {
@@ -128,11 +129,11 @@ public class ProjectService {
 
     @Transactional
     public void archiveProject(Long id, Long userId) {
-        Project project = projectRepository.findById(id)
+        Project project = projectRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
         if (!project.getOwner().getId().equals(userId)) {
-            throw new ProjectNotFoundException("Project not found with id: " + id);
+            throw new InsufficientPermissionException("Only OWNER can archive a project");
         }
 
         project.setArchivedFlag(true);
@@ -141,11 +142,11 @@ public class ProjectService {
 
     @Transactional
     public void unarchiveProject(Long id, Long userId) {
-        Project project = projectRepository.findById(id)
+        Project project = projectRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
         if (!project.getOwner().getId().equals(userId)) {
-            throw new ProjectNotFoundException("Project not found with id: " + id);
+            throw new InsufficientPermissionException("Only OWNER can unarchive a project");
         }
 
         project.setArchivedFlag(false);
@@ -154,14 +155,16 @@ public class ProjectService {
 
     @Transactional
     public void deleteProject(Long id, Long userId) {
-        Project project = projectRepository.findById(id)
+        Project project = projectRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + id));
 
-        if (!project.getOwner().getId().equals(userId)) {
-            throw new ProjectNotFoundException("Project not found with id: " + id);
-        }
+      if (!project.getOwner().getId().equals(userId)){
+          throw new InsufficientPermissionException("Only owner can delete the project");
+      }
 
-        projectRepository.delete(project);
+        project.setDeleted(true);
+      project.setDeletedBy(project.getOwner());
+
     }
 
     private ProjectResponse mapToResponse(Project project) {

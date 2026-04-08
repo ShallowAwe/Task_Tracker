@@ -4,9 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum ProjectRole {
-    OWNER(4),
-    MAINTAINER(3),
-    DEVELOPER(2),
+    OWNER(5),
+    MAINTAINER(4),
+    DEVELOPER(3),
+    TESTER(2),
     VIEWER(1);
 
     private final int level;

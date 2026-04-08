@@ -5,12 +5,15 @@ import com.rudra.sessionbased_task_tracker.comment.dto.CommentResponse;
 import com.rudra.sessionbased_task_tracker.comment.dto.CreateCommentRequest;
 import com.rudra.sessionbased_task_tracker.comment.dto.UpdateCommentRequest;
 import com.rudra.sessionbased_task_tracker.comment.entity.Comment;
+import com.rudra.sessionbased_task_tracker.comment.exception.CommentNotFoundException;
 import com.rudra.sessionbased_task_tracker.comment.repository.CommentRepository;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectNotFoundException;
 import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectMember;
 import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectRole;
+import com.rudra.sessionbased_task_tracker.projectMember.exception.InsufficientPermissionException;
 import com.rudra.sessionbased_task_tracker.projectMember.repository.ProjectMemberRepository;
 import com.rudra.sessionbased_task_tracker.ticket.entity.Ticket;
+import TicketNotFoundException;
 import com.rudra.sessionbased_task_tracker.ticket.repository.TicketRepository;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
 import com.rudra.sessionbased_task_tracker.user.repository.UserRepository;
@@ -86,20 +89,25 @@ public class CommentServiceImpl implements CommentService {
         validateActiveTicket(projectId, ticketId);
 
         Comment comment = commentRepository.findByIdAndDeletedFalse(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
 
         if (!comment.getTicket().getId().equals(ticketId)) {
-            throw new RuntimeException("Comment not found in this ticket");
+            throw new CommentNotFoundException("Comment not found in this ticket");
         }
 
         if (!comment.getAuthor().getId().equals(currentUserId)) {
-            throw new RuntimeException("Only author can edit comment");
+            throw new InsufficientPermissionException("Only author can edit comment");
         }
 
-        comment.setContent(request.getContent());
-        comment.setUpdatedAt(LocalDateTime.now());
 
-        return mapToResponse(comment);
+        if (request.getContent() == null || request.getContent().trim().isEmpty()) {
+            throw new IllegalArgumentException("Comment content cannot be empty");
+        }
+        comment.setContent(request.getContent().trim());
+
+        comment.setUpdatedAt(LocalDateTime.now());
+        Comment updatedComment = commentRepository.save(comment);
+        return mapToResponse(updatedComment);
     }
 
     @Override
@@ -113,23 +121,27 @@ public class CommentServiceImpl implements CommentService {
         validateActiveTicket(projectId, ticketId);
 
         Comment comment = commentRepository.findByIdAndDeletedFalse(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                .orElseThrow(() -> new CommentNotFoundException("Comment not found"));
 
         if (!comment.getTicket().getId().equals(ticketId)) {
-            throw new RuntimeException("Comment not found in this ticket");
+            throw new CommentNotFoundException("Comment not found in this ticket");
         }
 
         boolean isAuthor = comment.getAuthor().getId().equals(currentUserId);
         boolean isOwner = membership.getRole() == ProjectRole.OWNER;
 
         if (!isAuthor && !isOwner) {
-            throw new RuntimeException("Insufficient permission to delete comment");
+            throw new InsufficientPermissionException("Insufficient permission to delete comment");
         }
 
         comment.setDeleted(true);
-        comment.setUpdatedAt(LocalDateTime.now());
+        comment.setDeletedAt(LocalDateTime.now());
+        comment.setDeletedBy(membership.getUser());
+        commentRepository.save(comment);
     }
 
+
+    /// HELPER METHODS
     private ProjectMember validateMembership(Long projectId, Long userId) {
         return projectMemberRepository
                 .findByProjectIdAndUserId(projectId, userId)
@@ -138,10 +150,10 @@ public class CommentServiceImpl implements CommentService {
 
     private Ticket validateActiveTicket(Long projectId, Long ticketId) {
         Ticket ticket = ticketRepository.findByIdAndDeletedFalse(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         if (!ticket.getProject().getId().equals(projectId)) {
-            throw new RuntimeException("Ticket not found in this project");
+            throw new TicketNotFoundException("Ticket not found in this project");
         }
 
         return ticket;

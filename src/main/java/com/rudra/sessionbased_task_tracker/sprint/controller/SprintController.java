@@ -3,17 +3,31 @@ package com.rudra.sessionbased_task_tracker.sprint.controller;
 import com.rudra.sessionbased_task_tracker.sprint.dto.CreateSprintRequest;
 import com.rudra.sessionbased_task_tracker.sprint.dto.SprintResponse;
 import com.rudra.sessionbased_task_tracker.sprint.service.SprintService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/projects/{projectId}/sprints")
+@RequestMapping(
+        value = "/api/projects/{projectId}/sprints",
+        produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class SprintController {
 
     private final SprintService sprintService;
@@ -21,10 +35,10 @@ public class SprintController {
     @PostMapping
     public ResponseEntity<SprintResponse> createSprint(
             @PathVariable Long projectId,
-            @RequestBody CreateSprintRequest request,
+            @Valid @RequestBody CreateSprintRequest request,
             @AuthenticationPrincipal Long currentUserId) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(sprintService.createSprint(projectId, request, currentUserId));
+        SprintResponse created = sprintService.createSprint(projectId, request, currentUserId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
@@ -58,14 +72,18 @@ public class SprintController {
         return ResponseEntity.ok(sprintService.completeSprint(projectId, sprintId, currentUserId));
     }
 
-    @PostMapping("/{sprintId}/tickets/{ticketId}")
+    /**
+     * Attach an existing ticket to this sprint. Idempotent — calling twice has
+     * the same effect as calling once. Hence, PUT, not POST.
+     */
+    @PutMapping("/{sprintId}/tickets/{ticketId}")
     public ResponseEntity<Void> addTicketToSprint(
             @PathVariable Long projectId,
             @PathVariable Long sprintId,
             @PathVariable Long ticketId,
             @AuthenticationPrincipal Long currentUserId) {
         sprintService.addTicketToSprint(projectId, sprintId, ticketId, currentUserId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{sprintId}/tickets/{ticketId}")
@@ -75,7 +93,7 @@ public class SprintController {
             @PathVariable Long ticketId,
             @AuthenticationPrincipal Long currentUserId) {
         sprintService.removeTicketFromSprint(projectId, sprintId, ticketId, currentUserId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{sprintId}")

@@ -1,6 +1,7 @@
 package com.rudra.sessionbased_task_tracker.sprint.entity;
 
 import com.rudra.sessionbased_task_tracker.project.entity.Project;
+import com.rudra.sessionbased_task_tracker.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,7 +46,15 @@ public class Sprint {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "is_deleted")
+    private  boolean deleted;
 
+    @Column(name = "deleted_by")
+    private User deletedBy;
+
+    @Column(name = "deleted_at")
+    private User deletedAt;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

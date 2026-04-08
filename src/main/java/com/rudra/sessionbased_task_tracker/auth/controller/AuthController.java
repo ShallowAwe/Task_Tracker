@@ -4,7 +4,6 @@ import com.rudra.sessionbased_task_tracker.auth.dto.LoginRequest;
 import com.rudra.sessionbased_task_tracker.auth.dto.RegisterUser;
 import com.rudra.sessionbased_task_tracker.auth.service.AuthService;
 import com.rudra.sessionbased_task_tracker.common.dto.AuthResponse;
-import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
 import com.rudra.sessionbased_task_tracker.user.service.UserService;
 import jakarta.validation.Valid;

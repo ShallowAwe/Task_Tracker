@@ -1,6 +1,7 @@
 package com.rudra.sessionbased_task_tracker.ticket.entity;
 
 import com.rudra.sessionbased_task_tracker.project.entity.Project;
+import com.rudra.sessionbased_task_tracker.sprint.entity.Sprint;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -14,7 +15,6 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-
 public class Ticket {
 
     @Id
@@ -25,6 +25,11 @@ public class Ticket {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
+
+    // ---- Sprint Relation (Optional) ----
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sprint_id")
+    private Sprint sprint;
 
     // ---- Core Fields ----
     @Column(nullable = false, length = 255)
@@ -52,7 +57,7 @@ public class Ticket {
     private User assignee;
 
     // ---- Audit ----
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
@@ -63,4 +68,15 @@ public class Ticket {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

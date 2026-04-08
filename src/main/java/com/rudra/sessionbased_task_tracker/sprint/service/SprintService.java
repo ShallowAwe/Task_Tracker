@@ -34,7 +34,7 @@ public class SprintService {
 
     @Transactional
     public SprintResponse createSprint(Long projectId, CreateSprintRequest request, Long currentUserId) {
-        Project project = projectRepository.findById(projectId)
+        Project project = projectRepository.findByIdAndDeletedFalse(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
 
         validateSprintPermission(projectId, currentUserId);
