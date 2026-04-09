@@ -8,12 +8,14 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -33,9 +35,16 @@ public class JwtTokenProvider {
     @Value("${app.jwt-refresh-exp}")
     private long refreshTokenExpirationMs;
 
-    private SecretKey getSigningKey() {
+    private SecretKey signingKey;
+
+    @PostConstruct
+    private void init() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private SecretKey getSigningKey() {
+        return signingKey;
     }
 
     public String generateAccessToken(Long userId) {
@@ -96,6 +105,28 @@ public class JwtTokenProvider {
 
     public boolean isRefreshToken(String token) {
         return validateToken(token) && TOKEN_TYPE_REFRESH.equals(getTokenType(token));
+    }
+
+    /**
+     * Parses and validates the token in one shot. Returns the claims if valid,
+     * or empty if invalid. Use this to avoid parsing the same token multiple times.
+     */
+    public Optional<Claims> parseAndValidate(String token) {
+        try {
+            return Optional.of(parseClaims(token));
+        } catch (ExpiredJwtException | MalformedJwtException | SignatureException
+                 | UnsupportedJwtException | IllegalArgumentException e) {
+            log.debug("JWT invalid: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public Long getUserIdFromClaims(Claims claims) {
+        return Long.parseLong(claims.getSubject());
+    }
+
+    public String getTokenTypeFromClaims(Claims claims) {
+        return claims.get(CLAIM_TYPE, String.class);
     }
 
     private Claims parseClaims(String token) {

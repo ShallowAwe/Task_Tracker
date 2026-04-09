@@ -3,6 +3,7 @@ package com.rudra.sessionbased_task_tracker.sprint.service;
 import com.rudra.sessionbased_task_tracker.project.entity.Project;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectNotFoundException;
 import com.rudra.sessionbased_task_tracker.project.repository.ProjectRepository;
+import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectMember;
 import com.rudra.sessionbased_task_tracker.projectMember.entity.ProjectRole;
 import com.rudra.sessionbased_task_tracker.projectMember.exception.InsufficientPermissionException;
 import com.rudra.sessionbased_task_tracker.projectMember.repository.ProjectMemberRepository;
@@ -18,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,7 +62,7 @@ public class SprintService {
     public List<SprintResponse> getProjectSprints(Long projectId, Long currentUserId) {
         validateMembership(projectId, currentUserId);
 
-        return sprintRepository.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
+        return sprintRepository.findByProjectIdAndDeletedFalseOrderByCreatedAtDesc(projectId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -75,7 +77,7 @@ public class SprintService {
     public SprintResponse startSprint(Long projectId, Long sprintId, Long currentUserId) {
         validateSprintPermission(projectId, currentUserId);
 
-        if (sprintRepository.existsByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)) {
+        if (sprintRepository.existsByProjectIdAndStatusAndDeletedFalse(projectId, SprintStatus.ACTIVE)) {
             throw new IllegalStateException("Project already has an active sprint. Complete it first.");
         }
 
@@ -148,7 +150,7 @@ public class SprintService {
 
     @Transactional
     public void deleteSprint(Long projectId, Long sprintId, Long currentUserId) {
-        validateSprintPermission(projectId, currentUserId);
+        ProjectMember member = validateSprintPermission(projectId, currentUserId);
 
         Sprint sprint = getSprintAndValidateProject(projectId, sprintId);
 
@@ -158,14 +160,16 @@ public class SprintService {
 
         // Bulk detach all non-deleted tickets before deleting sprint
         ticketRepository.detachAllTicketsFromSprint(sprintId);
-
-        sprintRepository.delete(sprint);
+        sprint.setDeletedAt(LocalDateTime.now());
+        sprint.setDeletedBy(member.getUser());
+        sprint.setDeleted(true);
+        sprintRepository.save(sprint);
     }
 
     // --- Helper methods ---
 
     private Sprint getSprintAndValidateProject(Long projectId, Long sprintId) {
-        Sprint sprint = sprintRepository.findById(sprintId)
+        Sprint sprint = sprintRepository.findByIdAndDeletedFalse(sprintId)
                 .orElseThrow(() -> new SprintNotFoundException("Sprint not found with id: " + sprintId));
 
         if (!sprint.getProject().getId().equals(projectId)) {
@@ -174,13 +178,14 @@ public class SprintService {
         return sprint;
     }
 
-    private void validateSprintPermission(Long projectId, Long userId) {
+    private ProjectMember validateSprintPermission(Long projectId, Long userId) {
         var membership = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
 
         if (membership.getRole() != ProjectRole.OWNER && membership.getRole() != ProjectRole.MAINTAINER) {
             throw new InsufficientPermissionException("Only OWNER or MAINTAINER can manage sprints");
         }
+        return membership;
     }
 
     private void validateMembership(Long projectId, Long userId) {

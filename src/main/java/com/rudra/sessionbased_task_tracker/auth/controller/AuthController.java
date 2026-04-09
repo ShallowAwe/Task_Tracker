@@ -1,18 +1,16 @@
 package com.rudra.sessionbased_task_tracker.auth.controller;
 
 import com.rudra.sessionbased_task_tracker.auth.dto.LoginRequest;
+import com.rudra.sessionbased_task_tracker.auth.dto.RefreshTokenRequest;
 import com.rudra.sessionbased_task_tracker.auth.dto.RegisterUser;
 import com.rudra.sessionbased_task_tracker.auth.service.AuthService;
 import com.rudra.sessionbased_task_tracker.common.dto.AuthResponse;
-import com.rudra.sessionbased_task_tracker.user.entity.User;
-import com.rudra.sessionbased_task_tracker.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,7 +19,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserService userService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUser dto) {
@@ -35,8 +32,8 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@RequestBody Map<String, String> request) {
-        return ResponseEntity.ok(authService.refresh(request.get("refreshToken")));
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
     }
 
     @GetMapping("/me")
@@ -45,13 +42,9 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestBody Map<String, String> request) {
-        authService.logout(request.get("refreshToken"));
+    public ResponseEntity<?> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
-    }
-    @GetMapping("/getAll")
-    public List<User> getAllUser(){
-       return  userService.getAllUsers();
     }
 
 

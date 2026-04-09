@@ -1,5 +1,6 @@
 package com.rudra.sessionbased_task_tracker.common.security;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -34,28 +36,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractBearerToken(request);
 
         if (token != null) {
-            if (jwtTokenProvider.isAccessToken(token)) {
-                Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            Optional<Claims> maybeClaims = jwtTokenProvider.parseAndValidate(token);
 
-                // Legacy: kept for any controller still reading request.getAttribute("userId").
-                // Prefer @AuthenticationPrincipal in new code and remove this once migrated.
-                request.setAttribute("userId", userId);
+            if (maybeClaims.isPresent()) {
+                Claims claims = maybeClaims.get();
+                String type = jwtTokenProvider.getTokenTypeFromClaims(claims);
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userId,
-                                null,
-                                Collections.emptyList());
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request));
+                if (JwtTokenProvider.TOKEN_TYPE_ACCESS.equals(type)) {
+                    Long userId = jwtTokenProvider.getUserIdFromClaims(claims);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    request.setAttribute("userId", userId);
 
-                log.debug("Authenticated user {} for {} {}",
-                        userId, request.getMethod(), request.getRequestURI());
-            } else {
-                log.debug("Rejected non-access token for {} {}",
-                        request.getMethod(), request.getRequestURI());
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userId,
+                                    null,
+                                    Collections.emptyList());
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    log.debug("Authenticated user {} for {} {}",
+                            userId, request.getMethod(), request.getRequestURI());
+                } else {
+                    log.debug("Rejected non-access token for {} {}",
+                            request.getMethod(), request.getRequestURI());
+                }
             }
         }
 

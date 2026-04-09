@@ -1,9 +1,12 @@
 package com.rudra.sessionbased_task_tracker.user.service;
 
+import com.rudra.sessionbased_task_tracker.user.dto.UserResponse;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
 import com.rudra.sessionbased_task_tracker.user.exception.UserNotFoundException;
 import com.rudra.sessionbased_task_tracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,12 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    /// PAGABLE SERVICE
+
+    public Page<UserResponse> listAll(Pageable pageable){
+        return userRepository.findAll(pageable).map(UserResponse:: from);
     }
 
 

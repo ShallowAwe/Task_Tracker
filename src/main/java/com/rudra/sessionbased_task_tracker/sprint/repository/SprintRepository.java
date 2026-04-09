@@ -9,11 +9,13 @@ import java.util.Optional;
 
 public interface SprintRepository extends JpaRepository<Sprint, Long> {
 
-    List<Sprint> findByProjectId(Long projectId);
+    Optional<Sprint> findByIdAndDeletedFalse(Long id);
 
-    Optional<Sprint> findByProjectIdAndStatus(Long projectId, SprintStatus status);
+    List<Sprint> findByProjectIdAndDeletedFalse(Long projectId);
 
-    boolean existsByProjectIdAndStatus(Long projectId, SprintStatus status);
+    Optional<Sprint> findByProjectIdAndStatusAndDeletedFalse(Long projectId, SprintStatus status);
 
-    List<Sprint> findByProjectIdOrderByCreatedAtDesc(Long projectId);
+    boolean existsByProjectIdAndStatusAndDeletedFalse(Long projectId, SprintStatus status);
+
+    List<Sprint> findByProjectIdAndDeletedFalseOrderByCreatedAtDesc(Long projectId);
 }

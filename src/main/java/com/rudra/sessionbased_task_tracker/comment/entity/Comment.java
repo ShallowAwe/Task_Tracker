@@ -33,7 +33,7 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
@@ -42,10 +42,21 @@ public class Comment {
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 
-    @Column(name = "deleted_by")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
     private User deletedBy;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

@@ -21,14 +21,14 @@ public class Sprint {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
     @Column(nullable = false)
-    private String name; // e.g., "Sprint 1", "Sprint 2"
+    private String name;
 
-    private String goal; // sprint goal description
+    private String goal;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -46,21 +46,23 @@ public class Sprint {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_deleted")
-    private  boolean deleted;
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted;
 
-    @Column(name = "deleted_by")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
     private User deletedBy;
 
     @Column(name = "deleted_at")
-    private User deletedAt;
-    
+    private LocalDateTime deletedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (status == null)
+        if (status == null) {
             status = SprintStatus.PLANNING;
+        }
     }
 
     @PreUpdate
