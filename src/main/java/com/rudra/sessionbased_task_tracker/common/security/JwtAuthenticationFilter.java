@@ -45,8 +45,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (JwtTokenProvider.TOKEN_TYPE_ACCESS.equals(type)) {
                     Long userId = jwtTokenProvider.getUserIdFromClaims(claims);
 
-                    request.setAttribute("userId", userId);
-
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     userId,

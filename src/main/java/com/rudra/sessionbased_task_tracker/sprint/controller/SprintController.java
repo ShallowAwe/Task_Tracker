@@ -1,5 +1,6 @@
 package com.rudra.sessionbased_task_tracker.sprint.controller;
 
+import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
 import com.rudra.sessionbased_task_tracker.sprint.dto.CreateSprintRequest;
 import com.rudra.sessionbased_task_tracker.sprint.dto.SprintResponse;
 import com.rudra.sessionbased_task_tracker.sprint.service.SprintService;
@@ -87,21 +88,21 @@ public class SprintController {
     }
 
     @DeleteMapping("/{sprintId}/tickets/{ticketId}")
-    public ResponseEntity<Void> removeTicketFromSprint(
+    public ResponseEntity<MessageResponse> removeTicketFromSprint(
             @PathVariable Long projectId,
             @PathVariable Long sprintId,
             @PathVariable Long ticketId,
             @AuthenticationPrincipal Long currentUserId) {
         sprintService.removeTicketFromSprint(projectId, sprintId, ticketId, currentUserId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new MessageResponse("Ticket removed from sprint successfully"));
     }
 
     @DeleteMapping("/{sprintId}")
-    public ResponseEntity<Void> deleteSprint(
+    public ResponseEntity<MessageResponse> deleteSprint(
             @PathVariable Long projectId,
             @PathVariable Long sprintId,
             @AuthenticationPrincipal Long currentUserId) {
         sprintService.deleteSprint(projectId, sprintId, currentUserId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new MessageResponse("Sprint deleted successfully"));
     }
 }

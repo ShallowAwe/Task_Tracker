@@ -6,6 +6,7 @@ import com.rudra.sessionbased_task_tracker.projectMember.dto.ProjectMemberRespon
 import com.rudra.sessionbased_task_tracker.projectMember.dto.UpdateMemberRoleRequest;
 import com.rudra.sessionbased_task_tracker.projectMember.service.ProjectMemberService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class ProjectMemberController {
     public ResponseEntity<ProjectMemberResponse> addMember(
             @PathVariable Long projectId,
             @Valid @RequestBody AddMemberRequest request,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(projectMemberService.addMember(projectId, request, currentUserId));
     }
@@ -32,7 +33,7 @@ public class ProjectMemberController {
     @GetMapping
     public ResponseEntity<List<ProjectMemberResponse>> getMembers(
             @PathVariable Long projectId,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
         return ResponseEntity.ok(projectMemberService.getProjectMembers(projectId, currentUserId));
     }
 
@@ -41,7 +42,7 @@ public class ProjectMemberController {
             @PathVariable Long projectId,
             @PathVariable Long memberId,
             @Valid @RequestBody UpdateMemberRoleRequest request,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
         return ResponseEntity.ok(
                 projectMemberService.updateMemberRole(projectId, memberId, request, currentUserId));
     }
@@ -50,7 +51,7 @@ public class ProjectMemberController {
     public ResponseEntity<MessageResponse> removeMember(
             @PathVariable Long projectId,
             @PathVariable Long memberId,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
         projectMemberService.removeMember(projectId, memberId, currentUserId);
         return ResponseEntity.ok(new MessageResponse("Member removed successfully"));
     }

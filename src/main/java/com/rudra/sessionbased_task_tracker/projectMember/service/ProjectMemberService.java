@@ -109,7 +109,7 @@ public class ProjectMemberService {
 
         memberToUpdate.setRole(request.getRole());
         memberToUpdate.setUpdatedAt(LocalDateTime.now());
-
+        projectMemberRepository.save(memberToUpdate);
         return mapToResponse(memberToUpdate);
     }
 

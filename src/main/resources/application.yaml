@@ -17,6 +17,8 @@ spring:
 
 
 app:
-  jwt-secret: dGhpc2lzYXZlcnlzZWNyZXRrZXl0aGF0aXNsb25nZW5vdWdoZm9ySFMyNTZhbGdvcml0aG1hbmRpdHNob3VsZGJla2VwdHNlY3VyZQ==
+  jwt-refresh-secret: 11445bc6636696a201bcaca5e817a577cb4611c1cd5e5404ebe9dd2b575059c1fdb6a73b0a1af7e46c4d24528662067651d4e7ce7f16337033391fcf192aadba
+  jwt-access-secret: e9c8eb5128f72241f31a11e73dbcf83ee0c67cfbcacf1141b6a28093d05142e1d9e6d5eaad1db7065da4ab1b5de8a2b962998c86d4b06e6a37f3f765a0626453
+
   jwt-access-exp: 900000
   jwt-refresh-exp: 604800000

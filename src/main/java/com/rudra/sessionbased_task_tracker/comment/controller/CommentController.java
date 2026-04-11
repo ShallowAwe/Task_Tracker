@@ -6,6 +6,7 @@ import com.rudra.sessionbased_task_tracker.comment.dto.UpdateCommentRequest;
 import com.rudra.sessionbased_task_tracker.comment.service.CommentService;
 import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class CommentController {
             @PathVariable Long projectId,
             @PathVariable Long ticketId,
             @Valid @RequestBody CreateCommentRequest request,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
 
         CommentResponse response =
                 commentService.addComment(projectId, ticketId, request, currentUserId);
@@ -39,7 +40,7 @@ public class CommentController {
     public ResponseEntity<List<CommentResponse>> getComments(
             @PathVariable Long projectId,
             @PathVariable Long ticketId,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
 
         return ResponseEntity.ok(
                 commentService.getComments(projectId, ticketId, currentUserId)
@@ -53,7 +54,7 @@ public class CommentController {
             @PathVariable Long ticketId,
             @PathVariable Long commentId,
             @Valid @RequestBody UpdateCommentRequest request,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
 
         return ResponseEntity.ok(
                 commentService.updateComment(projectId, ticketId, commentId, request, currentUserId)
@@ -66,7 +67,7 @@ public class CommentController {
             @PathVariable Long projectId,
             @PathVariable Long ticketId,
             @PathVariable Long commentId,
-            @RequestAttribute("userId") Long currentUserId) {
+            @AuthenticationPrincipal Long currentUserId) {
 
         commentService.deleteComment(projectId, ticketId, commentId, currentUserId);
 

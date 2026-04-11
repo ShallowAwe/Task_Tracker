@@ -1,5 +1,6 @@
 package com.rudra.sessionbased_task_tracker.sprint.service;
 
+import com.rudra.sessionbased_task_tracker.activity.service.ActivityService;
 import com.rudra.sessionbased_task_tracker.project.entity.Project;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectNotFoundException;
 import com.rudra.sessionbased_task_tracker.project.repository.ProjectRepository;
@@ -31,6 +32,7 @@ public class SprintService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final TicketRepository ticketRepository;
+    private final ActivityService activityService;
 
     private static final List<TicketStatus> DONE_STATUSES = List.of(TicketStatus.RESOLVED, TicketStatus.CLOSED);
 
@@ -56,6 +58,10 @@ public class SprintService {
                 .build();
 
         Sprint saved = sprintRepository.save(sprint);
+
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUserId).orElseThrow();
+        activityService.log(project, member.getUser(), "created", "Sprint", saved.getName());
+
         return mapToResponse(saved);
     }
 
@@ -89,6 +95,10 @@ public class SprintService {
 
         sprint.setStatus(SprintStatus.ACTIVE);
         Sprint saved = sprintRepository.save(sprint);
+
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUserId).orElseThrow();
+        activityService.log(sprint.getProject(), member.getUser(), "started", "Sprint", sprint.getName());
+
         return mapToResponse(saved);
     }
 
@@ -108,6 +118,10 @@ public class SprintService {
         ticketRepository.moveIncompleteTicketsToBacklog(sprintId, DONE_STATUSES);
 
         Sprint saved = sprintRepository.save(sprint);
+
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, currentUserId).orElseThrow();
+        activityService.log(sprint.getProject(), member.getUser(), "completed", "Sprint", sprint.getName());
+
         return mapToResponse(saved);
     }
 
@@ -164,6 +178,8 @@ public class SprintService {
         sprint.setDeletedBy(member.getUser());
         sprint.setDeleted(true);
         sprintRepository.save(sprint);
+
+        activityService.log(sprint.getProject(), member.getUser(), "deleted", "Sprint", sprint.getName());
     }
 
     // --- Helper methods ---

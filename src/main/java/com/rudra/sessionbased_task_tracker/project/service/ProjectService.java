@@ -1,5 +1,6 @@
 package com.rudra.sessionbased_task_tracker.project.service;
 
+import com.rudra.sessionbased_task_tracker.activity.service.ActivityService;
 import com.rudra.sessionbased_task_tracker.project.dto.CreateProjectRequest;
 import com.rudra.sessionbased_task_tracker.project.dto.UpdateProjectRequest;
 import com.rudra.sessionbased_task_tracker.project.dto.ProjectResponse;
@@ -29,13 +30,16 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ActivityService activityService;
+
+    static final String projectNotFoundExceptionString = "Project not found with id: ";
 
     @Transactional
     public ProjectResponse createProject(CreateProjectRequest request, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new UserNotFoundException(projectNotFoundExceptionString + userId));
 
-        if (projectRepository.existsByKey(request.getKey())) {
+        if (projectRepository.existsByKeyAndDeletedFalse(request.getKey())) {
             throw new ProjectAlreadyExistsException(request.getKey());
         }
 
@@ -61,6 +65,8 @@ public class ProjectService {
         ownerMembership.setUpdatedAt(now);
         projectMemberRepository.save(ownerMembership);
 
+        activityService.log(saved, user, "created", "Project", saved.getName());
+
         return mapToResponse(saved);
     }
 
@@ -77,7 +83,7 @@ public class ProjectService {
     }
 
     public ProjectResponse getProjectByKey(String key, Long userId) {
-        Project project = projectRepository.findByKey(key)
+        Project project = projectRepository.findByKeyAndDeletedFalse(key)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with key: " + key));
 
         if (!projectMemberRepository.existsByProjectIdAndUserId(project.getId(), userId)) {
@@ -88,15 +94,15 @@ public class ProjectService {
     }
 
     public List<ProjectResponse> getAllProjectsByUser(Long userId) {
-        return projectMemberRepository.findByUserId(userId).stream()
-                .map(member -> member.getProject())
+        return projectMemberRepository.findByUserIdAndProjectDeletedFalse(userId).stream()
+                .map(ProjectMember::getProject)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     public List<ProjectResponse> getActiveProjectsByUser(Long userId) {
-        return projectMemberRepository.findByUserId(userId).stream()
-                .map(member -> member.getProject())
+        return projectMemberRepository.findByUserIdAndProjectDeletedFalse(userId).stream()
+                .map(ProjectMember::getProject)
                 .filter(project -> !project.isArchivedFlag())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -138,6 +144,8 @@ public class ProjectService {
 
         project.setArchivedFlag(true);
         project.setUpdatedAt(LocalDateTime.now());
+
+        activityService.log(project, project.getOwner(), "archived", "Project", project.getName());
     }
 
     @Transactional
@@ -151,6 +159,8 @@ public class ProjectService {
 
         project.setArchivedFlag(false);
         project.setUpdatedAt(LocalDateTime.now());
+
+        activityService.log(project, project.getOwner(), "unarchived", "Project", project.getName());
     }
 
     @Transactional
@@ -163,8 +173,9 @@ public class ProjectService {
       }
 
         project.setDeleted(true);
-      project.setDeletedBy(project.getOwner());
+        project.setDeletedBy(project.getOwner());
 
+        activityService.log(project, project.getOwner(), "deleted", "Project", project.getName());
     }
 
     private ProjectResponse mapToResponse(Project project) {

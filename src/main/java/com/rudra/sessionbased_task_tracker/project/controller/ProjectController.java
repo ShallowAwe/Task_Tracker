@@ -6,6 +6,7 @@ import com.rudra.sessionbased_task_tracker.project.dto.ProjectResponse;
 import com.rudra.sessionbased_task_tracker.project.dto.UpdateProjectRequest;
 import com.rudra.sessionbased_task_tracker.project.service.ProjectService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(
             @Valid @RequestBody CreateProjectRequest request,
-            @RequestAttribute("userId") Long userId) {
+            @AuthenticationPrincipal Long userId) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(projectService.createProject(request, userId));
     }
@@ -31,20 +32,20 @@ public class ProjectController {
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponse> getProjectById(
             @PathVariable Long id,
-            @RequestAttribute("userId") Long userId) {
+            @AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(projectService.getProjectById(id, userId));
     }
 
     @GetMapping("/key/{key}")
     public ResponseEntity<ProjectResponse> getProjectByKey(
             @PathVariable String key,
-            @RequestAttribute("userId") Long userId) {
+            @AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(projectService.getProjectByKey(key, userId));
     }
 
     @GetMapping
     public ResponseEntity<List<ProjectResponse>> getAllProjects(
-            @RequestAttribute("userId") Long userId,
+            @AuthenticationPrincipal Long userId,
             @RequestParam(required = false, defaultValue = "false") boolean includeArchived) {
 
         if (includeArchived) {
@@ -57,14 +58,14 @@ public class ProjectController {
     public ResponseEntity<ProjectResponse> updateProject(
             @PathVariable Long id,
             @Valid @RequestBody UpdateProjectRequest request,
-            @RequestAttribute("userId") Long userId) {
+            @AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(projectService.updateProject(id, request, userId));
     }
 
     @PatchMapping("/{id}/archive")
     public ResponseEntity<MessageResponse> archiveProject(
             @PathVariable Long id,
-            @RequestAttribute("userId") Long userId) {
+            @AuthenticationPrincipal Long userId) {
         projectService.archiveProject(id, userId);
         return ResponseEntity.ok(new MessageResponse("Project archived successfully"));
     }
@@ -72,7 +73,7 @@ public class ProjectController {
     @PatchMapping("/{id}/unarchive")
     public ResponseEntity<MessageResponse> unarchiveProject(
             @PathVariable Long id,
-            @RequestAttribute("userId") Long userId) {
+            @AuthenticationPrincipal Long userId) {
         projectService.unarchiveProject(id, userId);
         return ResponseEntity.ok(new MessageResponse("Project unarchived successfully"));
     }
@@ -80,7 +81,7 @@ public class ProjectController {
     @DeleteMapping("/{id}")
     public ResponseEntity<MessageResponse> deleteProject(
             @PathVariable Long id,
-            @RequestAttribute("userId") Long userId) {
+            @AuthenticationPrincipal Long userId) {
         projectService.deleteProject(id, userId);
         return ResponseEntity.ok(new MessageResponse("Project deleted successfully"));
     }

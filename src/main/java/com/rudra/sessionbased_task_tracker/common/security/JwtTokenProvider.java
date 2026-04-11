@@ -26,8 +26,11 @@ public class JwtTokenProvider {
 
     private static final String CLAIM_TYPE = "type";
 
-    @Value("${app.jwt-secret}")
-    private String jwtSecret;
+    @Value("${app.jwt-refresh-secret}")
+    private String jwtRefreshSecret;
+
+    @Value("${app.jwt-access-secret}")
+    private String jwtAccessSecret;
 
     @Value("${app.jwt-access-exp}")
     private long accessTokenExpirationMs;
@@ -35,16 +38,17 @@ public class JwtTokenProvider {
     @Value("${app.jwt-refresh-exp}")
     private long refreshTokenExpirationMs;
 
-    private SecretKey signingKey;
+    private SecretKey accessSigningKey;
+    private SecretKey refreshSigningKey;
 
     @PostConstruct
     private void init() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
-        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+        this.accessSigningKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtAccessSecret));
+        this.refreshSigningKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtRefreshSecret));
     }
 
-    private SecretKey getSigningKey() {
-        return signingKey;
+    private SecretKey getSigningKey(String tokenType) {
+        return TOKEN_TYPE_REFRESH.equals(tokenType) ? refreshSigningKey : accessSigningKey;
     }
 
     public String generateAccessToken(Long userId) {
@@ -64,16 +68,24 @@ public class JwtTokenProvider {
                 .issuedAt(now)
                 .expiration(expiry)
                 .claim(CLAIM_TYPE, type)
-                .signWith(getSigningKey())
+                .signWith(getSigningKey(type))
                 .compact();
     }
 
-    public Long getUserIdFromToken(String token) {
-        return Long.parseLong(parseClaims(token).getSubject());
+    public Long getUserIdFromAccessToken(String token) {
+        return Long.parseLong(parseAccessClaims(token).getSubject());
     }
 
-    public String getTokenType(String token) {
-        return parseClaims(token).get(CLAIM_TYPE, String.class);
+    public Long getUserIdFromRefreshToken(String token) {
+        return Long.parseLong(parseRefreshClaims(token).getSubject());
+    }
+
+    public String getAccessTokenType(String token) {
+        return parseAccessClaims(token).get(CLAIM_TYPE, String.class);
+    }
+
+    public String getRefreshTokenType(String token) {
+        return parseRefreshClaims(token).get(CLAIM_TYPE, String.class);
     }
 
     /**
@@ -83,7 +95,7 @@ public class JwtTokenProvider {
      */
     public boolean validateToken(String token) {
         try {
-            parseClaims(token);
+            parseAccessClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
             log.debug("JWT expired: {}", e.getMessage());
@@ -100,11 +112,16 @@ public class JwtTokenProvider {
     }
 
     public boolean isAccessToken(String token) {
-        return validateToken(token) && TOKEN_TYPE_ACCESS.equals(getTokenType(token));
+        return validateToken(token) && TOKEN_TYPE_ACCESS.equals(getAccessTokenType(token));
     }
 
     public boolean isRefreshToken(String token) {
-        return validateToken(token) && TOKEN_TYPE_REFRESH.equals(getTokenType(token));
+        try {
+            parseRefreshClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -113,7 +130,7 @@ public class JwtTokenProvider {
      */
     public Optional<Claims> parseAndValidate(String token) {
         try {
-            return Optional.of(parseClaims(token));
+            return Optional.of(parseAccessClaims(token));
         } catch (ExpiredJwtException | MalformedJwtException | SignatureException
                  | UnsupportedJwtException | IllegalArgumentException e) {
             log.debug("JWT invalid: {}", e.getMessage());
@@ -129,11 +146,35 @@ public class JwtTokenProvider {
         return claims.get(CLAIM_TYPE, String.class);
     }
 
-    private Claims parseClaims(String token) {
+    private Claims parseClaimsWithKey(String token, SecretKey key) {
         return Jwts.parser()
-                .verifyWith(getSigningKey())
+                .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+
+
+    private Claims parseAccessClaims(String token) {
+        Claims claims = parseClaimsWithKey(token, accessSigningKey);
+
+        String type = claims.get(CLAIM_TYPE, String.class);
+        if (!TOKEN_TYPE_ACCESS.equals(type)) {
+            throw new SignatureException("Not an access token");
+        }
+
+        return claims;
+    }
+
+    private Claims parseRefreshClaims(String token) {
+        Claims claims = parseClaimsWithKey(token, refreshSigningKey);
+
+        String type = claims.get(CLAIM_TYPE, String.class);
+        if (!TOKEN_TYPE_REFRESH.equals(type)) {
+            throw new SignatureException("Not a refresh token");
+        }
+
+        return claims;
     }
 }

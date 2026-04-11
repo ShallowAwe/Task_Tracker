@@ -3,6 +3,8 @@ package com.rudra.sessionbased_task_tracker.ticket.repository;
 import com.rudra.sessionbased_task_tracker.ticket.entity.Ticket;
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketPriority;
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +20,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByProjectIdAndDeletedFalse(Long projectId);
 
+    Page<Ticket> findByProjectIdAndDeletedFalse(Long projectId, Pageable pageable);
+
     List<Ticket> findByProjectIdAndStatusAndDeletedFalse(Long projectId, TicketStatus status);
 
     boolean existsByIdAndProjectIdAndDeletedFalse(Long ticketId, Long projectId);
@@ -31,6 +35,18 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByProjectIdAndAssigneeIdAndDeletedFalse(Long projectId, Long assigneeId);
 
     List<Ticket> findByProjectIdAndDueDateNotNullAndDeletedFalseOrderByDueDateAsc(Long projectId);
+
+    @Query("""
+            SELECT t FROM Ticket t
+            WHERE t.project.id = :projectId
+              AND t.dueDate IS NOT NULL
+              AND t.deleted = false
+              AND t.status NOT IN :excludedStatuses
+            ORDER BY t.dueDate ASC
+            """)
+    List<Ticket> findUpcomingDeadlines(
+            @Param("projectId") Long projectId,
+            @Param("excludedStatuses") List<TicketStatus> excludedStatuses);
 
     long countByProjectIdAndDueDateBetweenAndDeletedFalse(
             Long projectId, LocalDateTime start, LocalDateTime end);

@@ -5,10 +5,14 @@ import com.rudra.sessionbased_task_tracker.project.exception.ProjectNotFoundExce
 import com.rudra.sessionbased_task_tracker.projectMember.exception.InsufficientPermissionException;
 import com.rudra.sessionbased_task_tracker.projectMember.exception.MemberAlreadyExistsException;
 import com.rudra.sessionbased_task_tracker.projectMember.exception.MemberNotFoundException;
+import com.rudra.sessionbased_task_tracker.comment.exception.CommentNotFoundException;
 import com.rudra.sessionbased_task_tracker.ticket.exception.TicketNotFoundException;
+import com.rudra.sessionbased_task_tracker.user.exception.DuplicateEmailException;
+import com.rudra.sessionbased_task_tracker.user.exception.InvalidPasswordException;
 import com.rudra.sessionbased_task_tracker.user.exception.UserAlreadyExistsException;
 import com.rudra.sessionbased_task_tracker.user.exception.UserNotFoundException;
 import com.rudra.sessionbased_task_tracker.auth.exception.InvalidTokenException;
+import com.rudra.sessionbased_task_tracker.auth.exception.MissingAuthHeaderException;
 import com.rudra.sessionbased_task_tracker.common.dto.ErrorResponse;
 
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +20,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -45,6 +50,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException x) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(x.getMessage()));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestHeader(MissingRequestHeaderException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse("Missing required header: " + ex.getHeaderName()));
+    }
+
+    @ExceptionHandler(MissingAuthHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingAuthHeader(MissingAuthHeaderException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(ex.getMessage()));
     }
 
     // Handles @Valid failures on request bodies
@@ -110,8 +127,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse(ex.getMessage()));
     }
-//   public ResponseEntity<ErrorResponse> InsufficientPermissionException(InsufficientPermissionException ex){
-//        return   ResponseEntity.status(HttpStatus.FORBIDDEN)
-//                .body(new ErrorResponse(ex.getMessage()));
-//   }
+
+    @ExceptionHandler(CommentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCommentNotFound(CommentNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPassword(InvalidPasswordException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
 }

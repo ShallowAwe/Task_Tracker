@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -47,7 +48,8 @@ public class AuthService {
         newUser.setCreatedAt(LocalDateTime.now());
 
         User savedUser = userService.createUser(newUser);
-        return generateTokensAndPersistSession(savedUser);
+        // New login → brand-new family
+        return generateTokensAndPersistSession(savedUser, UUID.randomUUID());
     }
 
     @Transactional
@@ -58,14 +60,20 @@ public class AuthService {
                         request.getPassword()));
 
         User user = userService.getUser(request.getEmail());
-        return generateTokensAndPersistSession(user);
+        // New login → brand-new family
+        return generateTokensAndPersistSession(user, UUID.randomUUID());
     }
 
     /**
-     * Refresh token rotation: validates the incoming refresh token, revokes it,
-     * and issues a brand-new access + refresh token pair. If the same refresh
-     * token is presented twice, the second attempt will fail because the token
-     * is now revoked — a strong signal of token theft.
+     * Refresh token rotation with reuse detection.
+     *
+     * Rotation: each successful refresh invalidates the presented token and
+     * issues a new pair within the SAME family.
+     *
+     * Reuse detection: if a token is presented that has already been revoked,
+     * we treat the entire family as compromised and revoke every token in it.
+     * This logs out the attacker AND the legitimate client (who must
+     * re-authenticate), which is the correct response to suspected theft.
      */
     @Transactional
     public AuthResponse refresh(String refreshToken) {
@@ -76,25 +84,29 @@ public class AuthService {
         RefreshToken storedToken = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new InvalidTokenException("Refresh token not found"));
 
+        // === REUSE DETECTION ===
         if (storedToken.isRevoked()) {
-            // Token reuse detected — possible theft. Consider revoking ALL
-            // refresh tokens for this user as a defensive measure.
-            log.warn("Revoked refresh token presented for user {}", storedToken.getUserId());
-            throw new InvalidTokenException("Refresh token revoked");
+            log.error("SECURITY ALERT: Refresh token reuse detected for user {} family {}. " +
+                            "Revoking entire token family.",
+                    storedToken.getUserId(), storedToken.getFamilyId());
+            refreshTokenRepository.revokeAllByFamilyId(storedToken.getFamilyId());
+            throw new InvalidTokenException(
+                    "Refresh token reuse detected. All sessions in this family have been revoked.");
         }
 
         if (storedToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            storedToken.setRevoked(true);
+            refreshTokenRepository.save(storedToken);
             throw new InvalidTokenException("Refresh token expired");
         }
 
-        // Rotate: revoke the old token and issue a new pair.
+        // Rotate within the same family
         storedToken.setRevoked(true);
         refreshTokenRepository.save(storedToken);
 
-        Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
-        User user = userService.getUserById(userId);
+        User user = userService.getUserById(storedToken.getUserId());
 
-        return generateTokensAndPersistSession(user);
+        return generateTokensAndPersistSession(user, storedToken.getFamilyId());
     }
 
     @Transactional(readOnly = true)
@@ -103,7 +115,7 @@ public class AuthService {
             throw new InvalidTokenException("Invalid access token");
         }
 
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+        Long userId = jwtTokenProvider.getUserIdFromAccessToken(token);
         User user = userService.getUserById(userId);
 
         return Map.of(
@@ -111,6 +123,7 @@ public class AuthService {
                 "email", user.getEmail(),
                 "name", user.getName());
     }
+
 
     @Transactional
     public void logout(String refreshToken) {
@@ -121,19 +134,25 @@ public class AuthService {
         RefreshToken storedToken = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new InvalidTokenException("Refresh token not found"));
 
-        if (!storedToken.isRevoked()) {
-            storedToken.setRevoked(true);
-            refreshTokenRepository.save(storedToken);
-        }
+        // Revoke the entire family on logout — this device's whole rotation chain.
+        // If you'd rather only kill the current token, swap this for the old behavior.
+        refreshTokenRepository.revokeAllByFamilyId(storedToken.getFamilyId());
     }
 
-    private AuthResponse generateTokensAndPersistSession(User user) {
+    /** Optional: nuclear option for "log out everywhere" / password change. */
+    @Transactional
+    public void revokeAllSessionsForUser(Long userId) {
+        refreshTokenRepository.revokeAllByUserId(userId);
+    }
+
+    private AuthResponse generateTokensAndPersistSession(User user, UUID familyId) {
         String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
         RefreshToken session = new RefreshToken();
         session.setToken(refreshToken);
         session.setUserId(user.getId());
+        session.setFamilyId(familyId);
         session.setExpiryDate(LocalDateTime.now().plusDays(REFRESH_TOKEN_DAYS));
         session.setRevoked(false);
 

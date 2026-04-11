@@ -4,6 +4,8 @@ import com.rudra.sessionbased_task_tracker.ticket.dto.CreateTicketRequest;
 import com.rudra.sessionbased_task_tracker.ticket.dto.TicketResponse;
 import com.rudra.sessionbased_task_tracker.ticket.dto.UpdateTicketRequest;
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -12,6 +14,8 @@ public interface TicketService {
     TicketResponse createTicket(Long projectId, CreateTicketRequest request, Long currentUserId);
 
     List<TicketResponse> getTicketsByProject(Long projectId, Long currentUserId);
+
+    Page<TicketResponse> getTicketsByProject(Long projectId, Long currentUserId, Pageable pageable);
 
     TicketResponse getTicketById(Long projectId, Long ticketId, Long currentUserId);
 

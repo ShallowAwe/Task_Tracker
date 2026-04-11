@@ -147,7 +147,7 @@ public class OverviewService {
         Project project = findProjectAndValidateMembership(projectKey, currentUserId);
 
         List<Ticket> tickets = ticketRepository
-                .findByProjectIdAndDueDateNotNullAndDeletedFalseOrderByDueDateAsc(project.getId());
+                .findUpcomingDeadlines(project.getId(), List.of(TicketStatus.RESOLVED, TicketStatus.CLOSED));
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -157,13 +157,13 @@ public class OverviewService {
                         .key(project.getKey() + "-" + ticket.getId())
                         .title(ticket.getTitle())
                         .dueDate(ticket.getDueDate())
-                        .overdue(ticket.getDueDate().isBefore(now))
+                        .overdue(ticket.getDueDate() != null && ticket.getDueDate().isBefore(now))
                         .build())
                 .collect(Collectors.toList());
     }
 
     private Project findProjectAndValidateMembership(String projectKey, Long currentUserId) {
-        Project project = projectRepository.findByKey(projectKey)
+        Project project = projectRepository.findByKeyAndDeletedFalse(projectKey)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with key: " + projectKey));
 
         projectMemberRepository.findByProjectIdAndUserId(project.getId(), currentUserId)
