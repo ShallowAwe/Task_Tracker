@@ -39,7 +39,7 @@ public class UserService {
         if (email != null && !email.isBlank()) {
             String normalizedEmail = email.trim().toLowerCase();
 
-            if (userRepository.existsByEmailAndUserId(normalizedEmail, userId)) {
+            if (userRepository.existsByEmailAndIdNot(normalizedEmail, userId)) {
                 throw new DuplicateEmailException("Email already in use");
             }
 

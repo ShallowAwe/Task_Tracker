@@ -1,5 +1,4 @@
-package com.rudra.sessionbased_task_tracker.overview.service;
-
+package com.rudra.sessionbased_task_tracker.overview.services;
 import com.rudra.sessionbased_task_tracker.activity.dto.ActivityResponse;
 import com.rudra.sessionbased_task_tracker.activity.entity.Activity;
 import com.rudra.sessionbased_task_tracker.activity.repository.ActivityRepository;
@@ -10,6 +9,9 @@ import com.rudra.sessionbased_task_tracker.project.entity.Project;
 import com.rudra.sessionbased_task_tracker.project.exception.ProjectNotFoundException;
 import com.rudra.sessionbased_task_tracker.project.repository.ProjectRepository;
 import com.rudra.sessionbased_task_tracker.projectMember.repository.ProjectMemberRepository;
+import com.rudra.sessionbased_task_tracker.sprint.entity.Sprint;
+import com.rudra.sessionbased_task_tracker.sprint.entity.SprintStatus;
+import com.rudra.sessionbased_task_tracker.sprint.repository.SprintRepository;
 import com.rudra.sessionbased_task_tracker.ticket.entity.Ticket;
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketPriority;
 import com.rudra.sessionbased_task_tracker.ticket.entity.TicketStatus;
@@ -18,10 +20,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +37,7 @@ public class OverviewService {
     private final ProjectMemberRepository projectMemberRepository;
     private final TicketRepository ticketRepository;
     private final ActivityRepository activityRepository;
+    private final SprintRepository sprintRepository;
 
     @Transactional(readOnly = true)
     public ProjectSummaryResponse getProjectSummary(String projectKey, Long currentUserId) {
@@ -88,17 +94,70 @@ public class OverviewService {
             projectStatus = "Behind";
         }
 
+        // --- Active Sprint ---
+        Optional<Sprint> activeSprintOpt = sprintRepository.findByProjectIdAndStatusAndDeletedFalse(
+                projectId, SprintStatus.ACTIVE);
+
+        ProjectSummaryResponse.SprintInfo sprintInfo = null;
+        ProjectSummaryResponse.SprintMetric sprintMetric = null;
+
+        if (activeSprintOpt.isPresent()) {
+            Sprint activeSprint = activeSprintOpt.get();
+            int daysLeft = 0;
+            int totalDays = 0;
+            if (activeSprint.getStartDate() != null && activeSprint.getEndDate() != null) {
+                totalDays = (int) ChronoUnit.DAYS.between(activeSprint.getStartDate(), activeSprint.getEndDate());
+                daysLeft = Math.max(0, (int) ChronoUnit.DAYS.between(LocalDate.now(), activeSprint.getEndDate()));
+            }
+
+            sprintInfo = ProjectSummaryResponse.SprintInfo.builder()
+                    .name(activeSprint.getName())
+                    .daysLeft(daysLeft)
+                    .totalDays(totalDays)
+                    .build();
+
+            int sprintTotal = ticketRepository.countBySprintIdAndDeletedFalse(activeSprint.getId());
+            int sprintCompleted = ticketRepository.countCompletedTicketsInSprint(
+                    activeSprint.getId(), List.of(TicketStatus.RESOLVED, TicketStatus.CLOSED));
+
+            sprintMetric = ProjectSummaryResponse.SprintMetric.builder()
+                    .name(activeSprint.getName())
+                    .goal(activeSprint.getGoal())
+                    .status(activeSprint.getStatus().name())
+                    .daysLeft(daysLeft)
+                    .totalDays(totalDays)
+                    .totalTickets(sprintTotal)
+                    .completedTickets(sprintCompleted)
+                    .build();
+        }
+
+        // --- Metric Cards ---
+        long overdueCount = ticketRepository.countOverdueTickets(
+                projectId, LocalDateTime.now(), List.of(TicketStatus.RESOLVED, TicketStatus.CLOSED));
+        long unassignedCount = ticketRepository.countByProjectIdAndAssigneeIsNullAndDeletedFalse(projectId);
+        long teamMemberCount = projectMemberRepository.countByProjectId(projectId);
+
+        ProjectSummaryResponse.MetricCards metrics = ProjectSummaryResponse.MetricCards.builder()
+                .totalTickets(totalCount)
+                .overdueTickets(overdueCount)
+                .unassignedTickets(unassignedCount)
+                .teamMembers(teamMemberCount)
+                .completionRate(progress)
+                .activeSprint(sprintMetric)
+                .build();
+
         ProjectSummaryResponse.ProjectInfo projectInfo = ProjectSummaryResponse.ProjectInfo.builder()
                 .name(project.getName())
                 .status(projectStatus)
                 .progress(progress)
-                .activeSprint(null) // No sprint entity exists in the project
+                .activeSprint(sprintInfo)
                 .build();
 
         return ProjectSummaryResponse.builder()
                 .project(projectInfo)
                 .stats(stats)
                 .workflow(workflow)
+                .metrics(metrics)
                 .build();
     }
 

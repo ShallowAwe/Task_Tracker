@@ -51,6 +51,21 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     long countByProjectIdAndDueDateBetweenAndDeletedFalse(
             Long projectId, LocalDateTime start, LocalDateTime end);
 
+    long countByProjectIdAndAssigneeIsNullAndDeletedFalse(Long projectId);
+
+    @Query("""
+            SELECT COUNT(t) FROM Ticket t
+            WHERE t.project.id = :projectId
+              AND t.deleted = false
+              AND t.dueDate IS NOT NULL
+              AND t.dueDate < :now
+              AND t.status NOT IN :excludedStatuses
+            """)
+    long countOverdueTickets(
+            @Param("projectId") Long projectId,
+            @Param("now") LocalDateTime now,
+            @Param("excludedStatuses") List<TicketStatus> excludedStatuses);
+
     // ---- Sprint-related queries ----
 
     /**
