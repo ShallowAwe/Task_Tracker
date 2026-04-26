@@ -31,15 +31,18 @@ public class ProjectMemberService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
+    // ---------------- ADD MEMBER ----------------
     @Transactional
     public ProjectMemberResponse addMember(Long projectId, AddMemberRequest request, Long currentUserId) {
+
         Project project = projectRepository.findByIdAndDeletedFalse(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
 
-        ProjectMember currentMember = validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can add members");
+        ProjectMember currentMember = validateMemberPermission(
+                projectId, currentUserId,
+                "Only OWNER or MAINTAINER can add members"
+        );
 
-        // Prevent role escalation: can only assign roles below your own level
-        // Exception: OWNER can assign any role
         if (currentMember.getRole() != ProjectRole.OWNER
                 && request.getRole().getLevel() >= currentMember.getRole().getLevel()) {
             throw new InsufficientPermissionException(
@@ -53,21 +56,20 @@ public class ProjectMemberService {
             throw new MemberAlreadyExistsException("User is already a member of this project");
         }
 
-        LocalDateTime now = LocalDateTime.now();
-
         ProjectMember newMember = new ProjectMember();
         newMember.setProject(project);
         newMember.setUser(userToAdd);
         newMember.setRole(request.getRole());
-        newMember.setCreatedAt(now);
-        newMember.setUpdatedAt(now);
 
         ProjectMember savedMember = projectMemberRepository.save(newMember);
 
         return mapToResponse(savedMember);
     }
 
+    // ---------------- GET MEMBERS ----------------
+    @Transactional(readOnly = true)
     public List<ProjectMemberResponse> getProjectMembers(Long projectId, Long currentUserId) {
+
         if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, currentUserId)) {
             throw new ProjectNotFoundException("Project not found with id: " + projectId);
         }
@@ -77,10 +79,19 @@ public class ProjectMemberService {
                 .collect(Collectors.toList());
     }
 
+    // ---------------- UPDATE ROLE ----------------
     @Transactional
-    public ProjectMemberResponse updateMemberRole(Long projectId, Long memberId, UpdateMemberRoleRequest request,
-                                                  Long currentUserId) {
-        ProjectMember currentMember = validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can update member roles");
+    public ProjectMemberResponse updateMemberRole(
+            Long projectId,
+            Long memberId,
+            UpdateMemberRoleRequest request,
+            Long currentUserId
+    ) {
+
+        ProjectMember currentMember = validateMemberPermission(
+                projectId, currentUserId,
+                "Only OWNER or MAINTAINER can update member roles"
+        );
 
         ProjectMember memberToUpdate = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Member not found with id: " + memberId));
@@ -93,14 +104,12 @@ public class ProjectMemberService {
             throw new InsufficientPermissionException("Cannot change OWNER role");
         }
 
-        // Prevent role escalation: cannot assign role at or above your own level (unless OWNER)
         if (currentMember.getRole() != ProjectRole.OWNER
                 && request.getRole().getLevel() >= currentMember.getRole().getLevel()) {
             throw new InsufficientPermissionException(
                     "Cannot assign a role equal to or higher than your own");
         }
 
-        // Prevent non-OWNER from modifying someone at or above their level
         if (currentMember.getRole() != ProjectRole.OWNER
                 && memberToUpdate.getRole().getLevel() >= currentMember.getRole().getLevel()) {
             throw new InsufficientPermissionException(
@@ -108,14 +117,20 @@ public class ProjectMemberService {
         }
 
         memberToUpdate.setRole(request.getRole());
-        memberToUpdate.setUpdatedAt(LocalDateTime.now());
-        projectMemberRepository.save(memberToUpdate);
-        return mapToResponse(memberToUpdate);
+
+        ProjectMember updatedMember = projectMemberRepository.save(memberToUpdate);
+
+        return mapToResponse(updatedMember);
     }
 
+    // ---------------- REMOVE MEMBER ----------------
     @Transactional
     public void removeMember(Long projectId, Long memberId, Long currentUserId) {
-        ProjectMember currentMember = validateMemberPermission(projectId, currentUserId, "Only OWNER or MAINTAINER can remove members");
+
+        ProjectMember currentMember = validateMemberPermission(
+                projectId, currentUserId,
+                "Only OWNER or MAINTAINER can remove members"
+        );
 
         ProjectMember memberToRemove = projectMemberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Member not found with id: " + memberId));
@@ -128,7 +143,6 @@ public class ProjectMemberService {
             throw new InsufficientPermissionException("Cannot remove OWNER from project");
         }
 
-        // Prevent removing someone at or above your level (unless OWNER)
         if (currentMember.getRole() != ProjectRole.OWNER
                 && memberToRemove.getRole().getLevel() >= currentMember.getRole().getLevel()) {
             throw new InsufficientPermissionException(
@@ -138,16 +152,33 @@ public class ProjectMemberService {
         projectMemberRepository.delete(memberToRemove);
     }
 
+    // ---------------- UPDATE LAST ACCESSED ----------------
+    @Transactional
+    public void updateLastAccessed(Long projectId, Long userId) {
+
+        ProjectMember member = projectMemberRepository
+                .findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not accessible"));
+
+        member.setLastAccessedAt(LocalDateTime.now());
+
+        projectMemberRepository.save(member);
+    }
+
+    // ---------------- VALIDATION ----------------
     private ProjectMember validateMemberPermission(Long projectId, Long userId, String errorMessage) {
+
         ProjectMember membership = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new ProjectNotFoundException("Project not found with id: " + projectId));
 
         if (membership.getRole() != ProjectRole.OWNER && membership.getRole() != ProjectRole.MAINTAINER) {
             throw new InsufficientPermissionException(errorMessage);
         }
+
         return membership;
     }
 
+    // ---------------- MAPPER ----------------
     private ProjectMemberResponse mapToResponse(ProjectMember member) {
         return ProjectMemberResponse.builder()
                 .id(member.getId())
