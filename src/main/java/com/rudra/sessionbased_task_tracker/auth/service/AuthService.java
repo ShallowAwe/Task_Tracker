@@ -8,6 +8,7 @@ import com.rudra.sessionbased_task_tracker.auth.repository.RefreshTokenRepositor
 import com.rudra.sessionbased_task_tracker.common.dto.AuthResponse;
 import com.rudra.sessionbased_task_tracker.common.security.JwtTokenProvider;
 import com.rudra.sessionbased_task_tracker.user.entity.User;
+import com.rudra.sessionbased_task_tracker.user.entity.UserRole;
 import com.rudra.sessionbased_task_tracker.user.exception.UserAlreadyExistsException;
 import com.rudra.sessionbased_task_tracker.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class AuthService {
         newUser.setEmail(dto.getEmail());
         newUser.setName(dto.getName());
         newUser.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        newUser.setRole(UserRole.USER);
         newUser.setCreatedAt(LocalDateTime.now());
 
         User savedUser = userService.createUser(newUser);
@@ -121,7 +123,8 @@ public class AuthService {
         return Map.of(
                 "id", user.getId(),
                 "email", user.getEmail(),
-                "name", user.getName());
+                "name", user.getName(),
+                "role", user.getRole());
     }
 
 
