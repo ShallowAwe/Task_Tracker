@@ -30,6 +30,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectAccessService projectAccessService;
     private final ActivityService activityService;
 
     static final String projectNotFoundExceptionString = "Project not found with id: ";
@@ -43,16 +44,12 @@ public class ProjectService {
             throw new ProjectAlreadyExistsException(request.getKey());
         }
 
-        LocalDateTime now = LocalDateTime.now();
-
         Project project = new Project();
         project.setKey(request.getKey());
         project.setName(request.getName());
         project.setDescription(request.getDescription());
         project.setOwner(user);
         project.setArchivedFlag(false);
-        project.setCreatedAt(now);
-        project.setUpdatedAt(now);
 
         Project saved = projectRepository.save(project);
 
@@ -61,8 +58,7 @@ public class ProjectService {
         ownerMembership.setProject(saved);
         ownerMembership.setUser(user);
         ownerMembership.setRole(ProjectRole.OWNER);
-        ownerMembership.setCreatedAt(now);
-        ownerMembership.setUpdatedAt(now);
+        ownerMembership.setLastAccessedAt(LocalDateTime.now());
         projectMemberRepository.save(ownerMembership);
 
         activityService.log(saved, user, "created", "Project", saved.getName());
@@ -94,18 +90,30 @@ public class ProjectService {
     }
 
     public List<ProjectResponse> getAllProjectsByUser(Long userId) {
-        return projectMemberRepository.findByUserIdAndProjectDeletedFalse(userId).stream()
+        return projectAccessService.getActiveMemberships(userId).stream()
                 .map(ProjectMember::getProject)
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     public List<ProjectResponse> getActiveProjectsByUser(Long userId) {
-        return projectMemberRepository.findByUserIdAndProjectDeletedFalse(userId).stream()
+        return projectAccessService.getActiveMemberships(userId).stream()
                 .map(ProjectMember::getProject)
                 .filter(project -> !project.isArchivedFlag())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void selectProject(String projectKey, Long userId) {
+        Project project = projectRepository.findByKeyAndDeletedFalse(projectKey)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with key: " + projectKey));
+
+        ProjectMember membership = projectMemberRepository.findByProjectIdAndUserId(project.getId(), userId)
+                .orElseThrow(() -> new ProjectNotFoundException("Project not found with key: " + projectKey));
+
+        membership.setLastAccessedAt(LocalDateTime.now());
+        projectMemberRepository.save(membership);
     }
 
     @Transactional
@@ -127,9 +135,6 @@ public class ProjectService {
         if (request.getDescription() != null) {
             project.setDescription(request.getDescription());
         }
-
-        project.setUpdatedAt(LocalDateTime.now());
-
         return mapToResponse(project);
     }
 
@@ -143,7 +148,6 @@ public class ProjectService {
         }
 
         project.setArchivedFlag(true);
-        project.setUpdatedAt(LocalDateTime.now());
 
         activityService.log(project, project.getOwner(), "archived", "Project", project.getName());
     }
@@ -158,7 +162,6 @@ public class ProjectService {
         }
 
         project.setArchivedFlag(false);
-        project.setUpdatedAt(LocalDateTime.now());
 
         activityService.log(project, project.getOwner(), "unarchived", "Project", project.getName());
     }
@@ -173,6 +176,7 @@ public class ProjectService {
       }
 
         project.setDeleted(true);
+        project.setDeletedAt(LocalDateTime.now());
         project.setDeletedBy(project.getOwner());
 
         activityService.log(project, project.getOwner(), "deleted", "Project", project.getName());

@@ -97,3 +97,37 @@ erDiagram
 - **Service Communication**: Modules communicate via Service-to-Service calls (e.g., `TicketService` calls `ProjectMemberService` to verify permissions).
 - **ORM**: JPA/Hibernate manages the relational mapping ensuring data integrity across the MySQL database.
 - **Security Context**: The `Config` module extracts the `userId` from the JWT and injects it into the `SecurityContext`, making it globally available to the services.
+
+---
+
+## Current API Flow Notes
+
+### Home entry flow
+- `GET /api/v1/home` is the primary app-entry endpoint after login
+- It supports three states:
+- `STATE A`: no projects
+- `STATE B`: projects exist, but no project has been selected yet
+- `STATE C`: a project has been selected, so dashboard data is returned
+
+### Project selection flow
+- `POST /api/v1/projects/select` accepts `{ "projectKey": "..." }`
+- The backend validates project existence and membership
+- The selected membership's `last_accessed_at` is updated
+- Frontend should reload `/api/v1/home` after selection
+
+### Default project resolution
+- The backend no longer guesses a default project from membership creation time alone
+- A default project exists only when a membership has `lastAccessedAt`
+- Memberships are sorted by:
+- `lastAccessedAt DESC`
+- then `createdAt DESC`
+
+### Project creation behavior
+- When a user creates a project, the owner is added as a `ProjectMember`
+- The owner membership is immediately marked with `lastAccessedAt = now`
+- This causes the newly created project to become the active/default project on the next `/home` load
+
+### Audit/timestamp notes
+- `Project` now manages `createdAt` and `updatedAt` via `@PrePersist` and `@PreUpdate`
+- `ProjectMember` already manages timestamps with lifecycle hooks
+- `Project` also stores `deletedAt` in addition to the soft-delete flag

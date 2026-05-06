@@ -3,6 +3,7 @@ package com.rudra.sessionbased_task_tracker.project.controller;
 import com.rudra.sessionbased_task_tracker.common.dto.MessageResponse;
 import com.rudra.sessionbased_task_tracker.project.dto.CreateProjectRequest;
 import com.rudra.sessionbased_task_tracker.project.dto.ProjectResponse;
+import com.rudra.sessionbased_task_tracker.project.dto.SelectProjectRequest;
 import com.rudra.sessionbased_task_tracker.project.dto.UpdateProjectRequest;
 import com.rudra.sessionbased_task_tracker.project.service.ProjectService;
 import jakarta.validation.Valid;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/projects")
+@RequestMapping({"/api/projects", "/api/v1/projects"})
 @RequiredArgsConstructor
 public class ProjectController {
 
@@ -52,6 +53,14 @@ public class ProjectController {
             return ResponseEntity.ok(projectService.getAllProjectsByUser(userId));
         }
         return ResponseEntity.ok(projectService.getActiveProjectsByUser(userId));
+    }
+
+    @PostMapping("/select")
+    public ResponseEntity<MessageResponse> selectProject(
+            @Valid @RequestBody SelectProjectRequest request,
+            @AuthenticationPrincipal Long userId) {
+        projectService.selectProject(request.projectKey(), userId);
+        return ResponseEntity.ok(new MessageResponse("Project selected successfully"));
     }
 
     @PutMapping("/{id}")
