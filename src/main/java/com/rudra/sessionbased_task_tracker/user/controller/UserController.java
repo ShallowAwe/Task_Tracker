@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/users")
@@ -31,6 +32,7 @@ public class UserController {
     }
 
 
+
     @PatchMapping("/me")
     public ResponseEntity<UserProfileResponse> updateProfile(
             @Valid @RequestBody UpdateProfileRequest request,
@@ -40,17 +42,34 @@ public class UserController {
                 userId,
                 request.getEmail(),
                 request.getName()
+
         );
 
         UserProfileResponse response = new UserProfileResponse(
                 updatedUser.getId(),
                 updatedUser.getName(),
-                updatedUser.getEmail()
+                updatedUser.getEmail(),
+                updatedUser.getAvatar()
         );
 
         return ResponseEntity.ok(response);
     }
 
+    //update profile avatar
+    @PostMapping("/updateAvatar")
+    public ResponseEntity<UserProfileResponse> updateAvatar(
+             @RequestParam MultipartFile file,
+                @AuthenticationPrincipal Long userId
+            ){
 
+        User updatedUser = userService.updateAvatar(file, userId);
+        UserProfileResponse response = new UserProfileResponse(
+                updatedUser.getId(),
+                updatedUser.getName(),
+                updatedUser.getEmail(),
+                updatedUser.getAvatar()
+        );
+        return ResponseEntity.ok(response);
+    }
 
 }

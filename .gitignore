@@ -33,3 +33,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local Session Notes ###
+SESSION_NOTES_LOCAL.md

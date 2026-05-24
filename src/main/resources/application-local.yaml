@@ -1,11 +1,4 @@
 spring:
-  profiles:
-    active: prod
-
-  application:
-    name: Session-Based Task Tracker
-
-
   datasource:
     url: jdbc:mysql://localhost:3306/Task_Tracker?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root

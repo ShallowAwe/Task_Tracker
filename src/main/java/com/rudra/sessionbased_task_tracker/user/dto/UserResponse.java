@@ -9,6 +9,7 @@ public record UserResponse(
         String name,
         String email,
         UserRole role,
+        String avatar,
         LocalDateTime createdAt
 ) {
     public static UserResponse from(com.rudra.sessionbased_task_tracker.user.entity.User user) {
@@ -17,6 +18,7 @@ public record UserResponse(
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
+                user.getAvatar(),
                 user.getCreatedAt()
         );
     }

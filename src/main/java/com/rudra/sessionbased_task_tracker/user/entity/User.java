@@ -28,6 +28,9 @@ public class User {
     @JsonIgnore
     private String passwordHash;
 
+    @Column(name = "avatars")
+    private String avatar;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role = UserRole.USER;
