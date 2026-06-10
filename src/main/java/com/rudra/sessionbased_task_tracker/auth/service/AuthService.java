@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -120,12 +121,14 @@ public class AuthService {
         Long userId = jwtTokenProvider.getUserIdFromAccessToken(token);
         User user = userService.getUserById(userId);
 
-        return Map.of(
-                "id", user.getId(),
-                "email", user.getEmail(),
-                "name", user.getName(),
-                "role", user.getRole(),
-                "avatar", user.getAvatar());
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", user.getId());
+        response.put("email", user.getEmail());
+        response.put("name", user.getName());
+        response.put("role", user.getRole());
+        response.put("avatar", user.getAvatar());
+
+        return response;
     }
 
 

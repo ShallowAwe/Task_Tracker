@@ -191,7 +191,7 @@ public class OverviewService {
                         .id(activity.getId())
                         .user(ActivityResponse.UserInfo.builder()
                                 .name(activity.getUser().getName())
-                                .avatar(null)
+                                .avatar(activity.getUser().getAvatar())
                                 .build())
                         .action(activity.getAction())
                         .target(activity.getTarget())

@@ -25,7 +25,7 @@ public class TicketController {
 
     private final TicketService ticketService;
 
-    @PostMapping
+    @PostMapping("/createTicket")
     public ResponseEntity<TicketResponse> createTicket(
             @PathVariable Long projectId,
             @Valid @RequestBody CreateTicketRequest request,

@@ -188,6 +188,7 @@ public class ProjectMemberService {
                 .userId(member.getUser().getId())
                 .userName(member.getUser().getName())
                 .userEmail(member.getUser().getEmail())
+                .userAvatar(member.getUser().getAvatar())
                 .role(member.getRole())
                 .createdAt(member.getCreatedAt())
                 .updatedAt(member.getUpdatedAt())

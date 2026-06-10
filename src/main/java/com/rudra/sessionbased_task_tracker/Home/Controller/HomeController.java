@@ -8,7 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/home")
+@RequestMapping("/api/home")
 @RequiredArgsConstructor
 public class HomeController {
 

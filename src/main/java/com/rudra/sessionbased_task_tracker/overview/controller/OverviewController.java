@@ -13,7 +13,7 @@
     import java.util.List;
 
     @RestController
-    @RequestMapping("/api/v1/projects/{projectKey}")
+    @RequestMapping("/api/projects/{projectKey}")
     @RequiredArgsConstructor
     public class OverviewController {
 
